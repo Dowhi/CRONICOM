@@ -2527,11 +2527,13 @@
                         </div>
 
                         <!-- Categoría y Alarma -->
-                        <div style="display: grid; grid-template-columns: 1fr 60px; gap: 6px;">
-                            <div class="medieval-section" style="padding: 4px 8px; margin: 0;">
-                                <span style="font-family: Cinzel; font-size: 9px; color: var(--sepia);">CATEGORÍA</span>
+                        <div style="display: grid; grid-template-columns: 160px 1fr; gap: 10px;">
+                            <div class="medieval-section"
+                                style="padding: 6px 12px; margin: 0; display: flex; flex-direction: column; justify-content: center; min-height: 65px;">
+                                <span
+                                    style="font-family: Cinzel; font-size: 10px; color: var(--sepia); margin-bottom: 2px;">CATEGORÍA</span>
                                 <select id="editorCategory" class="notes-select"
-                                    style="height: 24px; border: none; background: transparent; width: 100%;">
+                                    style="height: 35px; border: none; background: transparent; width: 100%; font-size: 1.1em; padding: 0;">
                                     <option value="">Sin tipo...</option>
                                     <option value="Recordatorio">🔔 Recordatorio</option>
                                     <option value="Personal">👤 Personal</option>
@@ -2554,11 +2556,13 @@
                                 </select>
                             </div>
                             <div class="medieval-section"
-                                style="padding: 4px 8px; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border-color: var(--cinnabar);">
-                                <span style="font-family: Cinzel; font-size: 9px; color: var(--cinnabar);">AVISO</span>
-                                <label class="switch-medieval" style="cursor: pointer;">
+                                style="padding: 6px 8px; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border-color: var(--cinnabar); min-height: 65px;">
+                                <span
+                                    style="font-family: Cinzel; font-size: 10px; color: var(--cinnabar); margin-bottom: 2px;">AVISO</span>
+                                <label class="switch-medieval"
+                                    style="cursor: pointer; display: flex; align-items: center; justify-content: center; height: 35px; width: 100%;">
                                     <input type="checkbox" id="editorAlarm" style="display: none;">
-                                    <span id="alarmIcon" style="font-size: 1.2em; opacity: 0.3;">🔔</span>
+                                    <span id="alarmIcon" style="font-size: 1.8em; opacity: 0.3;">🔔</span>
                                 </label>
                             </div>
                         </div>
