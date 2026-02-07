@@ -3075,7 +3075,7 @@
         // CONFIGURACIÓN DE FIREBASE
         // ============================================
         const firebaseConfig = {
-            apiKey: "AIzaSyB5vvp7IQOZLO7LlsUY_Wq-H8M_5PH3ZQE",
+            apiKey: "AIzaSyCGE9TrLvHAIwuXn0o6jqFSw5RhSOHDtg8",
             authDomain: "apptaxi-f2190.firebaseapp.com",
             projectId: "apptaxi-f2190",
             storageBucket: "apptaxi-f2190.firebasestorage.app",
@@ -3099,14 +3099,20 @@
                 }
                 db = firebase.firestore();
 
-                // Habilitar persistencia offline (Nuevo método para evitar deprecación)
-                db.settings({
-                    cache: firebase.firestore.PersistentCache()
+                // Habilitar persistencia offline (Compat v10)
+                db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
+                    if (err.code == 'failed-precondition') {
+                        console.warn('Persistencia: múltiples pestañas abiertas');
+                    } else if (err.code == 'unimplemented') {
+                        console.warn('Persistencia: no soportada');
+                    }
                 });
 
                 isFirebaseConfigured = true;
                 isFirebaseConnected = true;
+                console.log('✅ Firebase conectado correctamente');
             } catch (error) {
+                console.error('❌ Error initializing Firebase:', error);
                 console.warn('Firebase no configurado, usando modo demo con localStorage');
                 useLocalStorage = true;
                 try {
