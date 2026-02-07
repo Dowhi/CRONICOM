@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chronicon - Calendario Medieval</title>
+    <link rel="icon" href="data:,">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -489,20 +490,27 @@
         }
 
         .home-events-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .home-event-item {
-            background: white;
-            border-radius: 12px;
+            background: var(--bg-surface);
+            border: var(--border-width) var(--border-style) var(--border-color);
+            border-radius: var(--border-radius-lg);
             padding: 10px 15px;
             display: flex;
             align-items: center;
             gap: 12px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            border: 1px solid #eee;
+            box-shadow: var(--shadow-ui);
+            transition: all 0.3s;
+        }
+
+        .home-event-item:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
         }
 
         .home-event-time {
@@ -1367,8 +1375,9 @@
                 font-size: 9px;
             }
 
-            .summary-cards {
-                grid-template-columns: 1fr;
+            .summary-cards,
+            .home-events-list {
+                grid-template-columns: 1fr !important;
             }
 
             #summaryView>div {
@@ -3090,13 +3099,9 @@
                 }
                 db = firebase.firestore();
 
-                // Habilitar persistencia offline
-                db.enablePersistence().catch((err) => {
-                    if (err.code == 'failed-precondition') {
-                        console.warn('Persistencia falló: múltiples pestañas abiertas');
-                    } else if (err.code == 'unimplemented') {
-                        console.warn('Persistencia no soportada por el navegador');
-                    }
+                // Habilitar persistencia offline (Nuevo método para evitar deprecación)
+                db.settings({
+                    cache: firebase.firestore.PersistentCache()
                 });
 
                 isFirebaseConfigured = true;
