@@ -190,6 +190,7 @@
             flex-direction: column;
             overflow: hidden;
             transition: background-color 0.5s, color 0.5s;
+            font-size: var(--app-font-size);
         }
 
         /* Textura de Fondo */
@@ -1487,8 +1488,9 @@
 
             .notes-input,
             .notes-select {
-                font-size: 13px;
-                padding: 6px;
+                font-size: 15px;
+                padding: 10px;
+                min-height: 40px;
             }
 
             .btn {
@@ -1675,23 +1677,26 @@
 
         .medieval-range {
             flex: 1;
-            height: 6px;
+            height: 12px;
             -webkit-appearance: none;
             appearance: none;
-            background: var(--parchment-dark);
-            border-radius: 3px;
+            background: var(--bg-surface-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
             outline: none;
+            margin: 10px 0;
         }
 
         .medieval-range::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 24px;
+            height: 24px;
             background: var(--accent-red);
-            border: 1.5px solid var(--accent-gold);
+            border: 2px solid var(--accent-gold);
             border-radius: 50%;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+            margin-top: -1px;
         }
 
         .visibility-list {
@@ -2630,7 +2635,7 @@
     <!-- Modal de Configuración -->
     <div class="modal" id="settingsModal">
         <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">Configuración</div>
+            <div class="modal-header">CONFIGURACIÓN</div>
             <div class="modal-body">
                 <div class="notes-control-group">
                     <label class="notes-label">Inicio de semana</label>
@@ -6602,6 +6607,7 @@
 
             document.getElementById('cellSizeSlider').value = note.fontSize || 11;
             document.getElementById('cellSizeValue').textContent = note.fontSize || 11;
+            document.getElementById('medievalEditor').style.fontSize = (note.fontSize || 11) + 'px';
             const fontSelect = document.getElementById('editorFontFamily');
             if (fontSelect) fontSelect.value = note.fontFamily || "'Almendra', serif";
 
@@ -6621,6 +6627,7 @@
             }
             document.getElementById('cellSizeSlider').value = 11;
             document.getElementById('cellSizeValue').textContent = 11;
+            document.getElementById('medievalEditor').style.fontSize = '11px';
             if (document.getElementById('editorFontFamily')) {
                 document.getElementById('editorFontFamily').value = "'Almendra', serif";
             }
@@ -6687,6 +6694,17 @@
 
         function updateCellSize(val) {
             document.getElementById('cellSizeValue').textContent = val;
+            const editor = document.getElementById('medievalEditor');
+            if (editor) {
+                editor.style.fontSize = val + 'px';
+            }
+        }
+
+        function toggleAlarmVisibility() {
+            const list = document.getElementById('dashboardAlarmsList');
+            if (list) {
+                list.style.display = list.style.display === 'none' ? 'flex' : 'none';
+            }
         }
 
         // Listener para el icono de alarma en el editor
