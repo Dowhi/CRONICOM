@@ -4495,7 +4495,7 @@
                         const limit = shifts.length > 0 ? 2 : 4;
                         notes.slice(0, limit).forEach((n, index) => {
                             const line = document.createElement('div');
-                            line.style.fontSize = '9px';
+                            line.style.fontSize = (n.fontSize || 9) + 'px';
                             line.style.fontFamily = n.fontFamily || "'Almendra', serif";
                             line.style.marginTop = '0px';
                             line.style.lineHeight = '1';
@@ -4538,7 +4538,7 @@
                     const limit = 4;
                     notes.slice(0, limit).forEach((n, index) => {
                         const line = document.createElement('div');
-                        line.style.fontSize = '9px';
+                        line.style.fontSize = (n.fontSize || 9) + 'px';
                         line.style.fontFamily = n.fontFamily || "'Almendra', serif";
                         line.style.marginTop = '1px';
                         line.style.lineHeight = '1';
