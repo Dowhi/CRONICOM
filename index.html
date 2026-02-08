@@ -48,11 +48,15 @@
 </head>
 
 <body>
-  <div id="introContainer">
-    <video id="introVideo" playsinline muted autoplay>
+  <div id="introContainer" onclick="hideIntro()">
+    <video id="introVideo" playsinline muted autoplay style="width: 100vw; height: 100vh; object-fit: cover;">
       <source src="intro.mp4" type="video/mp4">
       Tu navegador no soporta videos.
     </video>
+    <div id="skipIntro"
+      style="position: absolute; bottom: 20px; right: 20px; color: white; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-family: sans-serif; border: 1px solid rgba(255,255,255,0.3); z-index: 10000;">
+      Saltar Intro ➜
+    </div>
   </div>
 
   <iframe class="app-frame" src="calendar_medieval.html" title="Calendario Medieval"></iframe>
@@ -60,24 +64,42 @@
   <script>
     const intro = document.getElementById('introContainer');
     const video = document.getElementById('introVideo');
+    const skip = document.getElementById('skipIntro');
 
-    // Forzar autoplay si el navegador lo bloquea o esperar a que termine
+    // Intentar reproducir manualmente por si el autoplay falla
+    window.addEventListener('load', () => {
+      video.play().catch(err => {
+        console.log("Autoplay bloqueado, se requiere interacción o el video no existe.");
+        // Si el video no arranca, dejamos que el usuario haga click en el contenedor para entrar
+      });
+    });
+
     video.onended = () => {
       hideIntro();
     };
 
-    // Fallback por si hay error cargando el video
     video.onerror = () => {
       console.warn("Video no encontrado o error al cargar");
       hideIntro();
     };
 
+    skip.onclick = (e) => {
+      e.stopPropagation();
+      hideIntro();
+    };
+
+    let isHidden = false;
     function hideIntro() {
+      if (isHidden) return;
+      isHidden = true;
       intro.style.opacity = '0';
       setTimeout(() => {
         intro.style.display = 'none';
       }, 1000);
     }
+
+    // Timeout de seguridad: si pasan 15 segundos y no ha terminado, saltar
+    setTimeout(hideIntro, 15000);
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
