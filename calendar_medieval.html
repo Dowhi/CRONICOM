@@ -4509,8 +4509,9 @@
                             if (author && author.color) line.style.color = author.color;
                             else line.style.color = 'var(--iron-gall)';
 
+                            // Limpiar HTML correctamente usando stripHTML
                             const textToProcess = (n.text || '').trim();
-                            const cleanText = textToProcess.replace(/<[^>]*>/g, '').trim();
+                            const cleanText = stripHTML(textToProcess).trim();
 
                             // Si no hay texto pero hay hora, mostramos algo
                             let displayContent = '';
@@ -4550,7 +4551,8 @@
                         const author = getUsers().find(u => String(u.id) === String(n.authorId));
                         if (author && author.color) line.style.color = author.color;
 
-                        const cleanText = (n.text || '').replace(/<[^>]*>/g, '').trim();
+                        // Limpiar HTML correctamente usando stripHTML
+                        const cleanText = stripHTML(n.text || '').trim();
                         const words = cleanText.split(/\s+/).slice(0, 3).join(' ');
                         const timePart = (n.time && !n.isRecurring) ? `<div style="font-weight:bold; opacity:0.9; margin-top:2px;">${n.time}</div>` : '';
                         line.innerHTML = `<div style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${words || '...'}</div>` + timePart;
