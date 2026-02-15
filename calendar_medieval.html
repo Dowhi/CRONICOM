@@ -8119,14 +8119,83 @@
 
         function getMasterSupplyData() {
             return {
-                "Despensa": ["Arroz", "Pasta (macarrones, espagueti, fideos)", "Legumbres secas o bote", "Harina", "Pan de molde o tostadas", "Galletas sencillas / cereales", "Tomate frito / triturado", "Conservas de atún / sardinas", "Verduras en conserva", "Caldo en brick", "Aceite de oliva", "Vinagre", "Sal", "Azúcar", "Café / Té / Infusiones"],
-                "Nevera y Congelador": ["Leche o bebida vegetal", "Yogures / Postres lácteos", "Huevos", "Mantequilla / Margarina", "Queso lonchas/fresco/rallado", "Fiambre básico (jamón, pavo)", "Pollo u otra carne", "Pescado fresco/congelado", "Verdura fresca variada", "Fruta fresca variada", "Platos preparados básicos", "Masa de empanada/hojaldre"],
-                "Desayuno y Picoteo": ["Pan de barra / panecillos", "Mermelada / Crema cacao", "Frutos secos", "Barritas cereales / snacks"],
-                "Especias y Salsas": ["Especias (Pimienta, orégano, etc)", "Ajo / Cebolla en polvo", "Mayonesa, ketchup, mostaza", "Pastillas de caldo"],
-                "Limpieza": ["Detergente lavadora", "Suavizante", "Detergente lavavajillas", "Estropajos / Bayetas", "Pastillas lavavajillas", "Limpiador multiusos", "Friegasuelos", "Limpiacristales", "Limpiador antical", "Lejía", "Bolsas de basura", "Papel de cocina"],
-                "Higiene Personal": ["Papel higiénico", "Gel de baño", "Champú / Acondicionador", "Desodorante", "Pasta / Hilo dental", "Cepillos de dientes", "Maquinillas de afeitar", "Toallitas / Pañuelos"],
-                "Otros Básicos": ["Papel (horno, film, aluminio)", "Cerillas / Mechero", "Pilas"]
+                "Despensa": [
+                    "Arroz", "Pasta (macarrones, espagueti, fideos)", "Legumbres secas o bote (lentejas, garbanzos, alubias)",
+                    "Harina", "Pan de molde o tostadas", "Galletas sencillas / cereales desayuno",
+                    "Tomate frito o triturado en brick/bote", "Conservas de atún, sardinas u otras",
+                    "Verduras en conserva (maíz, guisantes, menestra, alcachofas)", "Caldo en brick (pollo, verduras)",
+                    "Aceite de oliva", "Vinagre", "Sal", "Azúcar", "Café o café soluble, té/infusiones"
+                ],
+                "Nevera y congelador": [
+                    "Leche o bebida vegetal", "Yogures o postres lácteos", "Huevos", "Mantequilla o margarina",
+                    "Queso en lonchas/queso fresco/rallado", "Fiambre básico (jamón cocido, pavo, chorizo)",
+                    "Pollo (pechuga, muslos) u otra carne habitual", "Pescado fresco o congelado (merluza, pescadilla, filetes)",
+                    "Verdura fresca (cebolla, ajo, zanahoria, pimientos, tomate, lechuga, espinacas, etc.)",
+                    "Fruta fresca variada (manzana, plátano, naranja, pera, etc.)",
+                    "Platos preparados básicos (pizza, verduras, salteados congelados)", "Masa de empanada u hojaldre"
+                ],
+                "Desayuno y picoteo": [
+                    "Pan de barra o panecillos", "Mermelada / crema de cacao", "Frutos secos (nueces, almendras, cacahuetes)",
+                    "Barritas de cereales u otros snacks habituales"
+                ],
+                "Especias y salsas": [
+                    "Pimienta, orégano, laurel, pimentón, curry u otras", "Ajo en polvo, cebolla en polvo",
+                    "Mayonesa, ketchup, mostaza", "Caldo concentrado / pastillas de caldo"
+                ],
+                "Limpieza del hogar": [
+                    "Detergente para lavadora", "Suavizante", "Detergente lavavajillas (a mano) o pastillas para lavavajillas",
+                    "Estropajos, bayetas de microfibra", "Lavavajillas para máquina", "Limpiador multiusos",
+                    "Friegasuelos", "Limpiacristales", "Limpiador antical (baño, grifería)", "Lejía",
+                    "Bolsas de basura", "Papel de cocina"
+                ],
+                "Baño e higiene personal": [
+                    "Papel higiénico", "Gel de baño", "Champú / acondicionador", "Desodorante",
+                    "Pasta de dientes e hilo dental", "Cepillos de dientes / recambios",
+                    "Maquinillas de afeitar / cuchillas", "Toallitas / pañuelos de papel"
+                ],
+                "Otros básicos de hogar": [
+                    "Filtros de café, papel de horno, film transparente, papel aluminio", "Cerillas / mechero", "Pilas"
+                ]
             };
+        }
+
+        async function autoLoadSuppliesAsChecked() {
+            // Solo ejecutar si el usuario está en la página y Firebase está listo
+            const masterData = getMasterSupplyData();
+            const existingItems = await getShoppingItemsFromDB();
+            const userId = getCurrentUserId();
+            let addedCount = 0;
+
+            for (const category in masterData) {
+                for (const text of masterData[category]) {
+                    // Verificar si ya existe el producto (evitar duplicados)
+                    if (!existingItems.find(item => item.text.toLowerCase() === text.toLowerCase())) {
+                        const newItem = {
+                            text,
+                            done: true, // "Con un check" -> Ya marcado
+                            userId,
+                            category,
+                            timestamp: Date.now()
+                        };
+
+                        if (isFirebaseConfigured && db) {
+                            await db.collection('shopping_list').add(newItem);
+                        } else {
+                            existingItems.push(newItem);
+                        }
+                        addedCount++;
+                    }
+                }
+            }
+
+            if (!isFirebaseConfigured || !db) {
+                localStorage.setItem('medieval_shopping_list', JSON.stringify(existingItems));
+            }
+
+            if (addedCount > 0) {
+                renderShoppingItems();
+                showToast(`✅ ${addedCount} productos añadidos al archivo maestro`);
+            }
         }
 
 
@@ -8155,6 +8224,7 @@
             // Inicializar extras
             displayMedievalQuote();
             autoPlayDragon();
+            autoLoadSuppliesAsChecked();
         }
 
         function autoPlayDragon() {
