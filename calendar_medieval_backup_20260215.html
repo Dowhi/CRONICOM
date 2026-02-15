@@ -2075,32 +2075,10 @@
             border: 2px dashed #5D4037;
             background-image: var(--body-mask);
         }
-
-        @keyframes blink {
-            0% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.3;
-            }
-
-            100% {
-                opacity: 1;
-            }
-        }
-
-        .rain-alert {
-            animation: blink 1s infinite;
-        }
     </style>
 </head>
 
 <body>
-    <audio id="ambientAudio" loop>
-        <source id="ambientSource" src="" type="audio/mpeg">
-    </audio>
-
     <!-- Header -->
     <div class="header">
         <div class="header-left">
@@ -2139,7 +2117,6 @@
                         Editar Usuarios</button>
                     <button class="quick-menu-item" style="padding-left: 18px;" onclick="showTab('userSelection')">🔃
                         Cambiar de Usuario</button>
-                    <button class="quick-menu-item" onclick="toggleAmbientSound()">🔊 Sonido Ambiente</button>
                     <button class="quick-menu-item" onclick="showTab('theme')">🎭 Estilo Visual</button>
                     <button class="quick-menu-item" onclick="openSettings()">⚙️ Ajustes de App</button>
                 </div>
@@ -2173,9 +2150,6 @@
                 <div class="greeting-text">
                     <div class="greeting-title" id="greetingTitle">Bienvenido, Escriba</div>
                     <div class="date-display" id="dateDisplay"></div>
-                    <div id="medievalQuote"
-                        style="font-style: italic; font-size: 0.85em; color: var(--text-muted); margin-top: 4px; border-left: 2px solid var(--accent-gold); padding-left: 8px;">
-                    </div>
                 </div>
                 <div class="greeting-avatar" id="homeAvatar">👤</div>
             </div>
@@ -2185,32 +2159,18 @@
                     <div class="count" id="eventsCount">0</div>
                     <div class="label">Eventos Hoy</div>
                 </div>
-                <div class="summary-card" id="weatherCard" style="transition: transform 0.3s;">
+                <div class="summary-card">
                     <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                        <span id="homeWeatherIcon" style="font-size: 2em; color: var(--cinnabar);">☀️</span>
-                        <span class="count" id="homeWeatherTemp">--°</span>
+                        <span id="homeWeatherIcon" style="font-size: 2em; color: var(--cinnabar);">⚡</span>
+                        <span class="count" id="homeWeatherTemp">13°</span>
                     </div>
-                    <div class="label" id="homeWeatherMeta">Sevilla | 💧 --% Lluvia</div>
+                    <div class="label" id="homeWeatherMeta">Sevilla | 98% 💧</div>
                 </div>
             </div>
 
-            <!-- Botones de Acción Rápida en Inicio -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                <button class="btn btn-accept" onclick="openShoppingList()"
-                    style="height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Cinzel'; font-size: 14px; background: rgba(212, 175, 55, 0.1); border: 1px solid var(--gold-leaf);">
-                    📜 COMPRA REAL
-                </button>
-                <button class="btn btn-accept" onclick="consultOracle()"
-                    style="height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Cinzel'; font-size: 14px; background: var(--bg-secondary-gradient); color: white;">
-                    🔮 EL ORÁCULO
-                </button>
-            </div>
-
-            <div id="homeEventsSection">
-                <div class="home-section-title">Eventos de Hoy</div>
-                <div id="homeEventsList" class="home-events-list">
-                    <div style="text-align:center; padding: 20px; color: #999; font-style: italic;">Cargando crónicas...
-                    </div>
+            <div class="home-section-title">Eventos de Hoy</div>
+            <div id="homeEventsList" class="home-events-list">
+                <div style="text-align:center; padding: 20px; color: #999; font-style: italic;">Cargando crónicas...
                 </div>
             </div>
 
@@ -2447,33 +2407,6 @@
         </div>
     </div>
 
-    <!-- Modal de Lista de la Compra -->
-    <div class="modal" id="shoppingModal">
-        <div class="modal-content" style="max-width: 400px; height: 500px; border-style: double;">
-            <div class="modal-header">
-                <div>📜 Lista de la Compra Real</div>
-                <div style="cursor: pointer;" onclick="closeShoppingModal()">✕</div>
-            </div>
-            <div class="modal-body" style="padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="shoppingInput" class="notes-input" placeholder="Añadir víveres..."
-                        list="masterSuppliesDatalist">
-                    <datalist id="masterSuppliesDatalist"></datalist>
-                    <button class="btn btn-accept" onclick="addShoppingItem()">Añadir</button>
-                </div>
-                <div id="shoppingListItems"
-                    style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
-                    <!-- Items -->
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button class="btn btn-cancel" onclick="clearShoppingList()"
-                        style="width: 100%; font-size: 11px;">🔥 VACIAR
-                        PERGAMINO</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Botones de Acción -->
     <div class="bottom-actions" id="bottomActions" style="display: none;">
         <button class="action-btn" onclick="activatePaintMode()">Pintar</button>
@@ -2655,15 +2588,16 @@
                         <button class="btn btn-accept" onclick="saveDayNote()">GUARDAR CRÓNICA</button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Footer fijo para el Dashboard -->
-                <div id="dashboardFooter"
-                    style="padding: 10px; border-top: 2px solid var(--gold-leaf); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button class="btn btn-cancel" onclick="closeModal()">CANCELAR</button>
-                    <button class="btn btn-accept" onclick="closeModal()">ACEPTAR</button>
-                </div>
+            <!-- Footer fijo para el Dashboard -->
+            <div id="dashboardFooter"
+                style="padding: 10px; border-top: 2px solid var(--gold-leaf); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn btn-cancel" onclick="closeModal()">CANCELAR</button>
+                <button class="btn btn-accept" onclick="closeModal()">ACEPTAR</button>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- Modal de Notas -->
@@ -2732,8 +2666,6 @@
                 <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
                     <button class="btn btn-accept" style="flex:1; min-width:140px;" onclick="openReminders()">🔔
                         Recordatorios</button>
-                    <button class="btn btn-accept" style="flex:1; min-width:140px; background: var(--sepia);"
-                        onclick="showTab('userSelection'); closeSettingsModal();">🔃 Cambio de Usuario</button>
                 </div>
                 <div class="modal-actions" style="margin-top:12px;">
                     <button class="btn btn-cancel" onclick="closeSettingsModal()">Cerrar</button>
@@ -2888,8 +2820,7 @@
                             <input type="date" id="exportTo" class="notes-input">
                         </div>
                     </div>
-                    <button class="btn btn-accept" style="width: 100%;" onclick="exportCalendar()">Generar
-                        Pergamino
+                    <button class="btn btn-accept" style="width: 100%;" onclick="exportCalendar()">Generar Pergamino
                         (JSON)</button>
                     <div id="exportStatus" style="margin-top:4px; font-size: 11px; text-align: center;"></div>
                 </div>
@@ -2917,8 +2848,7 @@
                                 placeholder="Pegue aquí las celdas o arrastre su archivo .csv..."></textarea>
                             <button class="btn btn-accept" onclick="importFromSheets()" style="width:100%;">Procesar
                                 Importación</button>
-                            <div style="font-size:9px; color:var(--sepia); font-style:italic;">Formatos:
-                                Arrastrar .csv
+                            <div style="font-size:9px; color:var(--sepia); font-style:italic;">Formatos: Arrastrar .csv
                                 | Pegar desde Excel/Sheets (Fecha, Tipo, Texto, Autor...)</div>
                         </div>
                     </div>
@@ -2941,8 +2871,7 @@
 
                 <div class="modal-actions" style="margin-top: 15px;">
                     <button class="btn btn-cancel" style="width: 100%;"
-                        onclick="document.getElementById('toolsModal').classList.remove('show')">CERRAR
-                        ARCHIVO</button>
+                        onclick="document.getElementById('toolsModal').classList.remove('show')">CERRAR ARCHIVO</button>
                 </div>
             </div>
         </div>
@@ -2962,8 +2891,7 @@
                                 style="flex:1;">
                         </div>
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <label class="notes-label" style="margin:0; white-space:nowrap;">Color del
-                                Blasón:</label>
+                            <label class="notes-label" style="margin:0; white-space:nowrap;">Color del Blasón:</label>
                             <input type="color" id="shiftColorInput" class="notes-input"
                                 style="width:60px; height:38px; padding:2px;">
                         </div>
@@ -3085,33 +3013,6 @@
                     <button class="btn btn-accept" onclick="performShiftDuplicate()">Duplicar</button>
                 </div>
                 <div id="shiftDupStatus" style="margin-top:8px;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Mensaje Genérico -->
-    <div class="modal" id="messageModal">
-        <div class="modal-content" style="max-width: 450px;">
-            <div class="modal-header" id="messageModalTitle">MENSAJE DEL REINO</div>
-            <div class="modal-body" id="messageModalBody"
-                style="padding: 24px; text-align: center; font-size: 1.15em; line-height: 1.6; font-family: 'Spectral', serif; color: var(--text-dark);">
-            </div>
-            <div class="modal-actions" id="messageModalActions"
-                style="padding: 15px; border-top: 1px solid rgba(0,0,0,0.1);">
-                <button class="btn btn-accept" style="width: 100%;" onclick="closeMessageModal()">ENTENDIDO</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Selección (Pistas de Audio, etc) -->
-    <div class="modal" id="selectionModal">
-        <div class="modal-content" style="max-width: 450px;">
-            <div class="modal-header" id="selectionModalTitle">ELIGE UNA OPCIÓN</div>
-            <div class="modal-body" id="selectionModalList"
-                style="padding: 15px; display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto;">
-            </div>
-            <div class="modal-actions" style="padding: 15px; border-top: 1px solid rgba(0,0,0,0.1);">
-                <button class="btn btn-cancel" style="width: 100%;" onclick="closeSelectionModal()">CANCELAR</button>
             </div>
         </div>
     </div>
@@ -4355,19 +4256,11 @@
             document.getElementById('eventsCount').textContent = todayEvents.length;
 
             const listCont = document.getElementById('homeEventsList');
-            const sectionCont = document.getElementById('homeEventsSection');
-
-            if (sectionCont) {
-                if (todayEvents.length === 0) {
-                    sectionCont.style.display = 'none';
-                } else {
-                    sectionCont.style.display = 'block';
-                }
-            }
-
             if (listCont) {
                 listCont.innerHTML = '';
-                if (todayEvents.length > 0) {
+                if (todayEvents.length === 0) {
+                    listCont.innerHTML = '<div style="text-align:center; padding: 20px; color: #999; font-style: italic;">No hay crónicas para hoy</div>';
+                } else {
                     // Ordenar por hora
                     todayEvents.sort((a, b) => (a.time || '00:00').localeCompare(b.time || '00:00'));
                     todayEvents.forEach(ev => {
@@ -4419,7 +4312,7 @@
                         const next5Hours = data.hourly.precipitation_probability.slice(hourIdx + 1, hourIdx + 6);
                         const willRainSoon = next5Hours.some(prob => prob > 30); // Probabilidad mayor al 30%
                         if (willRainSoon) {
-                            rainAlert = ' <span class="rain-alert" style="color: var(--cinnabar); font-weight: bold; border: 1px solid; padding: 1px 4px; border-radius: 4px; font-size: 0.8em; margin-left: 5px;">⚠️ LLUVIA PRÓXIMA</span>';
+                            rainAlert = ' <span style="color: var(--cinnabar); font-weight: bold; border: 1px solid; padding: 1px 4px; border-radius: 4px; font-size: 0.8em; margin-left: 5px;">⚠️ LLUVIA PRÓXIMA</span>';
                         }
                     }
 
@@ -5985,11 +5878,9 @@
             showToast('↪️ Acción rehecha');
         }
         function formatDateKey(date) {
-            const d = (date instanceof Date) ? date : new Date(date);
-            if (isNaN(d.getTime())) return ''; // Fecha inválida
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
 
@@ -6054,9 +5945,7 @@
         let editingRecurringId = null;
 
         function matchesRecurring(def, date) {
-            const dateObj = (date instanceof Date) ? date : new Date(date);
-            if (isNaN(dateObj.getTime())) return false;
-            const d = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+            const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             const dTime = d.getTime();
 
             const startStr = def.startDate || def.start;
@@ -6399,9 +6288,7 @@
 
         async function getEventsForDate(date) {
             try {
-                const dateObj = (date instanceof Date) ? date : new Date(date);
-                if (isNaN(dateObj.getTime())) return [];
-                const dateKey = formatDateKey(dateObj);
+                const dateKey = formatDateKey(date);
                 let rawEvents = [];
 
                 // 1. Intentar Caché (incluyendo arreglos vacíos para evitar re-hits)
@@ -7763,311 +7650,6 @@
             return luminance > 0.5 ? '#000000' : '#FFFFFF';
         }
 
-        // ============================================
-        // NUEVAS FUNCIONALIDADES FAMILIARES
-        // ============================================
-
-        // SONIDOS DE AMBIENTE (Fuentes seguras y directas)
-        const ambientTracks = [
-            { name: 'Taberna Real', url: 'https://www.soundjay.com/nature/sounds/rain-07.mp3' }, // Lluvia suave
-            { name: 'Bosque de Sherwood', url: 'https://www.soundjay.com/nature/sounds/forest-1.mp3' },
-            { name: 'Viento del Norte', url: 'https://www.soundjay.com/nature/sounds/wind-howl-01.mp3' }
-        ];
-        let currentTrackIdx = -1;
-
-        function toggleAmbientSound() {
-            const audio = document.getElementById('ambientAudio');
-            const source = document.getElementById('ambientSource');
-
-            currentTrackIdx++;
-            if (currentTrackIdx >= ambientTracks.length) {
-                currentTrackIdx = -1;
-                audio.pause();
-                showToast('🔇 Sonidos silenciados');
-                return;
-            }
-
-            const track = ambientTracks[currentTrackIdx];
-            source.src = track.url;
-            audio.load();
-            audio.play().catch(e => console.warn('Error audio:', e));
-            showToast(`🔊 Escuchando: ${track.name}`);
-        }
-
-        // FRASE DEL DÍA
-        const medievalQuotes = [
-            "El destino baraja las cartas, pero nosotros somos los que jugamos. (Anónimo)",
-            "No hay camino que no tenga fin. (Cervantes)",
-            "Honra merece quien a los suyos se parece. (Proverbio)",
-            "En tiempos de guerra, cualquier agujero es trinchera.",
-            "La pluma es más fuerte que la espada.",
-            "In omnia paratus (Preparado para todo).",
-            "A golpe de espada se forjan los reinos.",
-            "El saber no ocupa lugar en la biblioteca real.",
-            "Un caballero es quien hace lo correcto, no lo fácil.",
-            "Las estrellas brillan igual para el rey que para el siervo."
-        ];
-
-        function displayMedievalQuote() {
-            const quoteEl = document.getElementById('medievalQuote');
-            if (!quoteEl) return;
-            const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-            const quote = medievalQuotes[dayOfYear % medievalQuotes.length];
-            quoteEl.textContent = `📜 "${quote}"`;
-        }
-
-        // LISTA DE LA COMPRA REAL
-        function openShoppingList() {
-            document.getElementById('shoppingModal').classList.add('show');
-            initShoppingDatalist();
-            renderShoppingItems();
-        }
-
-        function initShoppingDatalist() {
-            const datalist = document.getElementById('masterSuppliesDatalist');
-            if (!datalist) return;
-            const masterData = getMasterSupplyData();
-            let html = '';
-            for (const cat in masterData) {
-                masterData[cat].forEach(item => {
-                    html += `<option value="${item}">`;
-                });
-            }
-            datalist.innerHTML = html;
-        }
-
-        function closeShoppingModal() {
-            document.getElementById('shoppingModal').classList.remove('show');
-        }
-
-        function addShoppingItem() {
-            const input = document.getElementById('shoppingInput');
-            const text = input.value.trim();
-            if (!text) return;
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-
-            // Detección de duplicados
-            const exists = items.find(item => item.text.toLowerCase() === text.toLowerCase());
-            if (exists) {
-                showToast(`⚠️ "${text}" ya está en el pergamino`);
-                input.value = '';
-                return;
-            }
-
-            // Intentar detectar categoría automáticamente
-            let category = "Otros";
-            const masterData = getMasterSupplyData();
-            for (const cat in masterData) {
-                if (masterData[cat].some(s => text.toLowerCase().includes(s.toLowerCase()))) {
-                    category = cat;
-                    break;
-                }
-            }
-
-            items.push({ text, done: false, user: getCurrentUserId(), category });
-            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
-            input.value = '';
-            renderShoppingItems();
-            showToast('🛒 Víveres anotados');
-        }
-
-        function renderShoppingItems() {
-            const container = document.getElementById('shoppingListItems');
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-            container.innerHTML = '';
-
-            // Comportamiento Apple Notes + Orden Alfabético
-            const sortedItems = items.map((item, index) => ({ ...item, originalIndex: index }))
-                .sort((a, b) => {
-                    // Primero por estado (pendientes arriba)
-                    if (a.done !== b.done) return a.done - b.done;
-                    // Luego alfabéticamente
-                    return a.text.localeCompare(b.text);
-                });
-
-            sortedItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'medieval-section';
-                div.style.padding = '1px 8px';
-                div.style.display = 'flex';
-                div.style.justifyContent = 'space-between';
-                div.style.alignItems = 'center';
-                div.style.margin = '0 0 1px 0';
-                div.style.minHeight = '26px';
-                div.innerHTML = `
-                    <span style="font-family: Arial, sans-serif; font-size: 13px; font-weight: 500; ${item.done ? 'opacity: 0.5' : ''}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${item.text}</span>
-                    <div style="display:flex; gap:2px;">
-                        <button class="btn" style="padding: 0px 4px; font-size: 10px; border-width: 1px; min-height: 20px;" onclick="toggleShoppingItem(${item.originalIndex})">${item.done ? '✅' : '⬜'}</button>
-                        <button class="btn btn-cancel" style="padding: 0px 4px; font-size: 10px; border-width: 1px; min-height: 20px;" onclick="removeShoppingItem(${item.originalIndex})">🗑️</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function toggleShoppingItem(i) {
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-            items[i].done = !items[i].done;
-            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
-            renderShoppingItems();
-        }
-
-        function removeShoppingItem(i) {
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-            items.splice(i, 1);
-            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
-            renderShoppingItems();
-        }
-
-        function clearShoppingList() {
-            showConfirm('📜 Pergamino de Víveres', '¿Deseas vaciar todo el pergamino de compra y arrojarlo al fuego?', () => {
-                localStorage.setItem('medieval_shopping_list', '[]');
-                renderShoppingItems();
-                showToast('🔥 El pergamino ha sido quemado');
-            });
-        }
-
-        // EL ORÁCULO (Resumen semanal)
-        async function consultOracle() {
-            showToast('🔮 El Oráculo está consultando los astros...');
-            const events = [];
-            for (let i = 0; i < 7; i++) {
-                const d = new Date();
-                d.setDate(d.getDate() + i);
-                const ds = d.toISOString().split('T')[0];
-                const dayEvents = await getEventsForDate(ds);
-                events.push(...dayEvents.filter(e => e.type === 'note'));
-            }
-
-            if (events.length === 0) {
-                showMessage('✨ Los cielos están despejados, Escriba. No se vislumbran grandes tareas en los próximos siete soles.');
-            } else {
-                const luck = Math.floor(Math.random() * events.length);
-                const event = events[luck];
-                showMessage('🔮 PROFECÍA DE LA SEMANA', `"${event.text}"\n\n(Visto en la crónica de: ${event.author || 'Anónimo'})`);
-            }
-        }
-
-        // SONIDO AMBIENTE
-        let ambientAudio = null;
-        const SoundTracks = {
-            'Corazón de Dragón': 'dragon.mp3',
-            'Medieval': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-            'Taberna': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-            'Naturaleza': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-            'Místico': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'
-        };
-
-        function toggleAmbientSound() {
-            if (ambientAudio && !ambientAudio.paused) {
-                ambientAudio.pause();
-                showToast('🔇 El silencio reina en el castillo');
-                return;
-            }
-
-            const keys = Object.keys(SoundTracks);
-            showSelectionModal('🎵 AMBIENTE DEL REINO', keys, (choice) => {
-                if (choice && SoundTracks[choice]) {
-                    if (!ambientAudio) {
-                        ambientAudio = new Audio(SoundTracks[choice]);
-                        ambientAudio.loop = true;
-                    } else {
-                        ambientAudio.src = SoundTracks[choice];
-                    }
-                    ambientAudio.play().then(() => {
-                        showToast(`🎵 Ambiente: ${choice}`);
-                    }).catch(e => {
-                        console.error('Audio error:', e);
-                        showToast('❌ El bardo se ha quedado sin voz');
-                    });
-                }
-            });
-        }
-
-        // --- SISTEMA DE DIÁLOGOS MEDIEVALES ---
-        function showMessage(title, text) {
-            document.getElementById('messageModalTitle').textContent = title;
-            document.getElementById('messageModalBody').innerHTML = text.replace(/\n/g, '<br>');
-            document.getElementById('messageModalActions').innerHTML = `
-                <button class="btn btn-accept" style="width: 100%;" onclick="closeMessageModal()">ENTENDIDO</button>
-            `;
-            document.getElementById('messageModal').classList.add('show');
-        }
-
-        function showConfirm(title, text, onConfirm) {
-            document.getElementById('messageModalTitle').textContent = title;
-            document.getElementById('messageModalBody').innerHTML = text.replace(/\n/g, '<br>');
-            document.getElementById('messageModalActions').innerHTML = `
-                <div style="display:flex; gap:10px; width:100%;">
-                    <button class="btn btn-cancel" style="flex:1;" onclick="closeMessageModal()">CANCELAR</button>
-                    <button class="btn btn-accept" style="flex:1;" id="confirmOkBtn">ACEPTAR</button>
-                </div>
-            `;
-            document.getElementById('confirmOkBtn').onclick = () => {
-                onConfirm();
-                closeMessageModal();
-            };
-            document.getElementById('messageModal').classList.add('show');
-        }
-
-        function closeMessageModal() {
-            document.getElementById('messageModal').classList.remove('show');
-        }
-
-        function showSelectionModal(title, options, onSelect) {
-            document.getElementById('selectionModalTitle').textContent = title;
-            const list = document.getElementById('selectionModalList');
-            list.innerHTML = '';
-            options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-accept';
-                btn.style.width = '100%';
-                btn.style.textAlign = 'left';
-                btn.style.padding = '12px 20px';
-                btn.style.fontSize = '1.1em';
-                btn.textContent = '🔊 ' + opt;
-                btn.onclick = () => {
-                    onSelect(opt);
-                    closeSelectionModal();
-                };
-                list.appendChild(btn);
-            });
-            document.getElementById('selectionModal').classList.add('show');
-        }
-
-        function closeSelectionModal() {
-            document.getElementById('selectionModal').classList.remove('show');
-        }
-
-        function addMasterSupplyList() {
-            const masterData = getMasterSupplyData();
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-            const userId = getCurrentUserId();
-
-            for (const category in masterData) {
-                masterData[category].forEach(text => {
-                    if (!items.find(item => item.text === text)) {
-                        items.push({ text, done: false, user: userId, category });
-                    }
-                });
-            }
-
-            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
-            renderShoppingItems();
-            showToast('📦 Suministros categorizados cargados');
-        }
-
-        function getMasterSupplyData() {
-            return {
-                "Despensa": ["Arroz", "Pasta (macarrones, espagueti, fideos)", "Legumbres secas o bote", "Harina", "Pan de molde o tostadas", "Galletas sencillas / cereales", "Tomate frito / triturado", "Conservas de atún / sardinas", "Verduras en conserva", "Caldo en brick", "Aceite de oliva", "Vinagre", "Sal", "Azúcar", "Café / Té / Infusiones"],
-                "Nevera y Congelador": ["Leche o bebida vegetal", "Yogures / Postres lácteos", "Huevos", "Mantequilla / Margarina", "Queso lonchas/fresco/rallado", "Fiambre básico (jamón, pavo)", "Pollo u otra carne", "Pescado fresco/congelado", "Verdura fresca variada", "Fruta fresca variada", "Platos preparados básicos", "Masa de empanada/hojaldre"],
-                "Desayuno y Picoteo": ["Pan de barra / panecillos", "Mermelada / Crema cacao", "Frutos secos", "Barritas cereales / snacks"],
-                "Especias y Salsas": ["Especias (Pimienta, orégano, etc)", "Ajo / Cebolla en polvo", "Mayonesa, ketchup, mostaza", "Pastillas de caldo"],
-                "Limpieza": ["Detergente lavadora", "Suavizante", "Detergente lavavajillas", "Estropajos / Bayetas", "Pastillas lavavajillas", "Limpiador multiusos", "Friegasuelos", "Limpiacristales", "Limpiador antical", "Lejía", "Bolsas de basura", "Papel de cocina"],
-                "Higiene Personal": ["Papel higiénico", "Gel de baño", "Champú / Acondicionador", "Desodorante", "Pasta / Hilo dental", "Cepillos de dientes", "Maquinillas de afeitar", "Toallitas / Pañuelos"],
-                "Otros Básicos": ["Papel (horno, film, aluminio)", "Cerillas / Mechero", "Pilas"]
-            };
-        }
 
 
         // ============================================
@@ -8091,43 +7673,6 @@
             updateMonthTitle();
             renderCalendar();
             updateHomeAvatar();
-
-            // Inicializar extras
-            displayMedievalQuote();
-            autoPlayDragon();
-        }
-
-        function autoPlayDragon() {
-            const track = 'Corazón de Dragón';
-            const url = SoundTracks[track];
-            if (!url) return;
-
-            const startMusic = () => {
-                if (ambientAudio && !ambientAudio.paused) return; // Ya sonando
-
-                if (!ambientAudio) {
-                    ambientAudio = new Audio(url);
-                    ambientAudio.loop = true;
-                } else {
-                    ambientAudio.src = url;
-                }
-
-                ambientAudio.play().then(() => {
-                    showToast(`🎵 El Corazón del Dragón late en el Reino`);
-                    // Limpiar listeners una vez que suene
-                    document.removeEventListener('click', startMusic);
-                    document.removeEventListener('touchstart', startMusic);
-                }).catch(e => {
-                    console.log("Esperando interacción para despertar al Dragón...");
-                });
-            };
-
-            // Intentar inmediatamente (Vite/Local suele permitirlo si hubo interacción previa en el host)
-            startMusic();
-
-            // Por si el navegador bloquea el primer intento, sonar al primer clic del usuario
-            document.addEventListener('click', startMusic);
-            document.addEventListener('touchstart', startMusic);
         }
 
         // Inicializar cuando cargue la página
