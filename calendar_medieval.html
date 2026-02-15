@@ -445,8 +445,8 @@
         .summary-cards {
             display: flex !important;
             flex-direction: row !important;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 10px;
         }
 
         .summary-card {
@@ -480,12 +480,12 @@
 
         .home-section-title {
             font-family: var(--font-header);
-            font-size: 1em;
+            font-size: 0.95em;
             color: var(--accent-red);
             text-transform: uppercase;
             border-bottom: var(--border-width) var(--border-style) var(--border-color);
-            padding-bottom: 3px;
-            margin: 10px 0 6px 0;
+            padding-bottom: 2px;
+            margin: 8px 0 4px 0;
             font-weight: bold;
             letter-spacing: 1px;
         }
@@ -493,8 +493,8 @@
         .home-events-list {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 12px;
         }
 
         .home-event-item {
@@ -2168,7 +2168,7 @@
     <!-- Contenido Principal -->
     <div class="main-content">
         <!-- Vista de Inicio -->
-        <div class="home-view active" id="homeView" style="padding: 15px; overflow-y: auto; height: 100%;">
+        <div class="home-view active" id="homeView" style="padding: 10px; overflow-y: auto; height: 100%;">
             <div class="greeting-card">
                 <div class="greeting-text">
                     <div class="greeting-title" id="greetingTitle">Bienvenido, Escriba</div>
@@ -2177,7 +2177,13 @@
                         style="font-style: italic; font-size: 0.85em; color: var(--text-muted); margin-top: 4px; border-left: 2px solid var(--accent-gold); padding-left: 8px;">
                     </div>
                 </div>
-                <div class="greeting-avatar" id="homeAvatar">👤</div>
+                <div class="greeting-avatar-container" style="position: relative;">
+                    <div class="greeting-avatar" id="homeAvatar">👤</div>
+                    <button id="muteBtn" onclick="toggleSilence()"
+                        style="position: absolute; bottom: -5px; right: -5px; background: var(--bg-surface); border: 1px solid var(--gold-leaf); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; box-shadow: var(--shadow-ui); z-index: 10;">
+                        🔊
+                    </button>
+                </div>
             </div>
 
             <div class="summary-cards">
@@ -2195,13 +2201,13 @@
             </div>
 
             <!-- Botones de Acción Rápida en Inicio -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
                 <button class="btn btn-accept" onclick="openShoppingList()"
-                    style="height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Cinzel'; font-size: 14px; background: rgba(212, 175, 55, 0.1); border: 1px solid var(--gold-leaf);">
+                    style="height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Cinzel'; font-size: 13px; background: rgba(212, 175, 55, 0.1); border: 1px solid var(--gold-leaf);">
                     📜 COMPRA REAL
                 </button>
                 <button class="btn btn-accept" onclick="consultOracle()"
-                    style="height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Cinzel'; font-size: 14px; background: var(--bg-secondary-gradient); color: white;">
+                    style="height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Cinzel'; font-size: 13px; background: var(--bg-secondary-gradient); color: white;">
                     🔮 EL ORÁCULO
                 </button>
             </div>
@@ -2731,8 +2737,6 @@
                 <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
                     <button class="btn btn-accept" style="flex:1; min-width:140px;" onclick="openReminders()">🔔
                         Recordatorios</button>
-                    <button class="btn btn-accept" style="flex:1; min-width:140px; background: var(--sepia);"
-                        onclick="showTab('userSelection'); closeSettingsModal();">🔃 Cambio de Usuario</button>
                 </div>
                 <div class="modal-actions" style="margin-top:12px;">
                     <button class="btn btn-cancel" onclick="closeSettingsModal()">Cerrar</button>
@@ -8042,6 +8046,23 @@
                     });
                 }
             });
+        }
+
+        function toggleSilence() {
+            const btn = document.getElementById('muteBtn');
+            if (ambientAudio) {
+                if (ambientAudio.paused) {
+                    ambientAudio.play();
+                    if (btn) btn.textContent = '🔊';
+                    showToast('🔊 La música vuelve al salón');
+                } else {
+                    ambientAudio.pause();
+                    if (btn) btn.textContent = '🔇';
+                    showToast('🔇 Silencio absoluto');
+                }
+            } else {
+                toggleAmbientSound();
+            }
         }
 
         // --- SISTEMA DE DIÁLOGOS MEDIEVALES ---
