@@ -2466,9 +2466,10 @@
                     <!-- Items -->
                 </div>
                 <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-accept" onclick="addMasterSupplyList()"
+                        style="width: 100%; font-size: 11px;">📦 CARGAR BÁSICOS</button>
                     <button class="btn btn-cancel" onclick="clearShoppingList()"
-                        style="width: 100%; font-size: 11px;">🔥 VACIAR
-                        PERGAMINO</button>
+                        style="width: 100%; font-size: 11px;">🔥 VACIAR PERGAMINO</button>
                 </div>
             </div>
         </div>
@@ -7816,7 +7817,7 @@
             quoteEl.textContent = `📜 "${quote}"`;
         }
 
-        // LISTA DE LA COMPRA REAL
+        // LISTA DE LA COMPRA REAL (Sincronizada con Firebase si está disponible)
         function openShoppingList() {
             document.getElementById('shoppingModal').classList.add('show');
             initShoppingDatalist();
@@ -7840,21 +7841,19 @@
             document.getElementById('shoppingModal').classList.remove('show');
         }
 
-        function addShoppingItem() {
+        async function addShoppingItem() {
             const input = document.getElementById('shoppingInput');
             const text = input.value.trim();
             if (!text) return;
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
 
-            // Detección de duplicados
-            const exists = items.find(item => item.text.toLowerCase() === text.toLowerCase());
+            const existingItems = await getShoppingItemsFromDB();
+            const exists = existingItems.find(item => item.text.toLowerCase() === text.toLowerCase());
             if (exists) {
                 showToast(`⚠️ "${text}" ya está en el pergamino`);
                 input.value = '';
                 return;
             }
 
-            // Intentar detectar categoría automáticamente
             let category = "Otros";
             const masterData = getMasterSupplyData();
             for (const cat in masterData) {
@@ -7864,26 +7863,45 @@
                 }
             }
 
-            items.push({ text, done: false, user: getCurrentUserId(), category });
-            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+            const newItem = {
+                text,
+                done: false,
+                userId: getCurrentUserId(),
+                category,
+                timestamp: Date.now()
+            };
+
+            if (isFirebaseConfigured && db) {
+                await db.collection('shopping_list').add(newItem);
+            } else {
+                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+                items.push(newItem);
+                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+            }
+
             input.value = '';
             renderShoppingItems();
             showToast('🛒 Víveres anotados');
         }
 
-        function renderShoppingItems() {
+        async function getShoppingItemsFromDB() {
+            if (isFirebaseConfigured && db) {
+                const snapshot = await db.collection('shopping_list').get();
+                return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            }
+            return JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+        }
+
+        async function renderShoppingItems() {
             const container = document.getElementById('shoppingListItems');
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+            if (!container) return;
+            const items = await getShoppingItemsFromDB();
             container.innerHTML = '';
 
-            // Comportamiento Apple Notes + Orden Alfabético
-            const sortedItems = items.map((item, index) => ({ ...item, originalIndex: index }))
-                .sort((a, b) => {
-                    // Primero por estado (pendientes arriba)
-                    if (a.done !== b.done) return a.done - b.done;
-                    // Luego alfabéticamente
-                    return a.text.localeCompare(b.text);
-                });
+            const sortedItems = items.sort((a, b) => {
+                if (a.done !== b.done) return a.done - b.done;
+                return a.text.localeCompare(b.text);
+            });
 
             sortedItems.forEach(item => {
                 const div = document.createElement('div');
@@ -7897,34 +7915,78 @@
                 div.innerHTML = `
                     <span style="font-family: Arial, sans-serif; font-size: 13px; font-weight: 500; ${item.done ? 'opacity: 0.5' : ''}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">${item.text}</span>
                     <div style="display:flex; gap:2px;">
-                        <button class="btn" style="padding: 0px 4px; font-size: 10px; border-width: 1px; min-height: 20px;" onclick="toggleShoppingItem(${item.originalIndex})">${item.done ? '✅' : '⬜'}</button>
-                        <button class="btn btn-cancel" style="padding: 0px 4px; font-size: 10px; border-width: 1px; min-height: 20px;" onclick="removeShoppingItem(${item.originalIndex})">🗑️</button>
+                        <button class="btn" style="padding: 0px 4px; font-size: 10px; border-width: 1px; min-height: 20px;" onclick="toggleShoppingItem('${item.id || ''}', ${items.indexOf(item)})">${item.done ? '✅' : '⬜'}</button>
+                        <button class="btn btn-cancel" style="padding: 0px 4px; font-size: 10px; border-width: 1px; min-height: 20px;" onclick="removeShoppingItem('${item.id || ''}', ${items.indexOf(item)})">🗑️</button>
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function toggleShoppingItem(i) {
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-            items[i].done = !items[i].done;
-            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+        async function toggleShoppingItem(id, index) {
+            if (isFirebaseConfigured && db && id) {
+                const doc = await db.collection('shopping_list').doc(id).get();
+                await db.collection('shopping_list').doc(id).update({ done: !doc.data().done });
+            } else {
+                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+                items[index].done = !items[index].done;
+                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+            }
             renderShoppingItems();
         }
 
-        function removeShoppingItem(i) {
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-            items.splice(i, 1);
-            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+        async function removeShoppingItem(id, index) {
+            if (isFirebaseConfigured && db && id) {
+                await db.collection('shopping_list').doc(id).delete();
+            } else {
+                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+                items.splice(index, 1);
+                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+            }
             renderShoppingItems();
         }
 
-        function clearShoppingList() {
-            showConfirm('📜 Pergamino de Víveres', '¿Deseas vaciar todo el pergamino de compra y arrojarlo al fuego?', () => {
-                localStorage.setItem('medieval_shopping_list', '[]');
+        async function clearShoppingList() {
+            showConfirm('📜 Pergamino de Víveres', '¿Deseas vaciar todo el pergamino de compra y arrojarlo al fuego?', async () => {
+                if (isFirebaseConfigured && db) {
+                    const snapshot = await db.collection('shopping_list').get();
+                    const batch = db.batch();
+                    snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                    await batch.commit();
+                } else {
+                    localStorage.setItem('medieval_shopping_list', '[]');
+                }
                 renderShoppingItems();
                 showToast('🔥 El pergamino ha sido quemado');
             });
+        }
+
+        async function addMasterSupplyList() {
+            const masterData = getMasterSupplyData();
+            const existingItems = await getShoppingItemsFromDB();
+            const userId = getCurrentUserId();
+            let addedCount = 0;
+
+            for (const category in masterData) {
+                for (const text of masterData[category]) {
+                    if (!existingItems.find(item => item.text.toLowerCase() === text.toLowerCase())) {
+                        const newItem = { text, done: false, userId, category, timestamp: Date.now() };
+                        if (isFirebaseConfigured && db) {
+                            await db.collection('shopping_list').add(newItem);
+                        } else {
+                            existingItems.push(newItem);
+                        }
+                        addedCount++;
+                    }
+                }
+            }
+
+            if (!isFirebaseConfigured || !db) {
+                localStorage.setItem('medieval_shopping_list', JSON.stringify(existingItems));
+            }
+
+            renderShoppingItems();
+            showToast(`📦 ${addedCount} suministros básicos cargados`);
         }
 
         // EL ORÁCULO (Resumen semanal)
