@@ -2196,13 +2196,13 @@
                         style="font-style: italic; font-size: 0.85em; color: var(--text-muted); margin-top: 4px; border-left: 2px solid var(--accent-gold); padding-left: 8px;">
                     </div>
                 </div>
-                <div class="greeting-avatar-container">
+                <div class="greeting-avatar-container" style="position: relative;">
                     <div class="greeting-avatar" id="homeAvatar">👤</div>
+                    <button id="muteBtn" onclick="toggleSilence()"
+                        style="position: absolute; bottom: -5px; right: -5px; background: var(--accent-gold); color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 100; transition: transform 0.2s;">
+                        🔊
+                    </button>
                 </div>
-                <button id="muteBtn" onclick="toggleSilence()"
-                    style="position: absolute; bottom: 8px; right: 12px; background: var(--accent-gold); color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 100; transition: transform 0.2s;">
-                    🔊
-                </button>
             </div>
 
             <div class="summary-cards">
