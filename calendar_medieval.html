@@ -1997,13 +1997,15 @@
             border: var(--border-width) var(--border-style) var(--border-color);
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-ui);
-            min-width: 180px;
+            min-width: 200px;
             z-index: 10001;
-            overflow-y: auto;
-            /* Habilitar scroll */
-            max-height: 85vh;
-            /* Límite de altura */
-            animation: fadeIn 0.2s ease-out;
+            overflow-y: auto !important;
+            /* Forzar scroll */
+            max-height: 80vh;
+            /* Límite de altura más estricto */
+            animation: fadeIn 0.15s ease-out;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 10px;
         }
 
         @keyframes fadeIn {
@@ -2198,7 +2200,7 @@
                     <div class="greeting-avatar" id="homeAvatar">👤</div>
                 </div>
                 <button id="muteBtn" onclick="toggleSilence()"
-                    style="position: absolute; top: 10px; right: 10px; background: var(--accent-gold); color: white; border: 2px solid white; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.4); z-index: 100; transition: transform 0.2s;">
+                    style="position: absolute; bottom: 8px; right: 12px; background: var(--accent-gold); color: white; border: 2px solid white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 100; transition: transform 0.2s;">
                     🔊
                 </button>
             </div>
