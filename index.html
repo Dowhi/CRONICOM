@@ -59,7 +59,7 @@
     </div>
   </div>
 
-  <iframe class="app-frame" src="calendar_medieval.html?v=1.0.7" title="Calendario Medieval"></iframe>
+  <iframe class="app-frame" src="calendar_medieval.html?v=1.0.9" title="Calendario Medieval"></iframe>
 
   <script>
     const intro = document.getElementById('introContainer');
@@ -90,6 +90,8 @@
 
     let isHidden = false;
     function hideIntro() {
+      // Script de limpieza agresiva de caché si la versión es nueva
+      const CURRENT_VERSION = '1.0.9';
       if (isHidden) return;
       isHidden = true;
       intro.style.opacity = '0';
@@ -101,10 +103,31 @@
     // Timeout de seguridad: si pasan 15 segundos y no ha terminado, saltar
     setTimeout(hideIntro, 15000);
 
+    // Script de limpieza agresiva de caché si la versión es nueva
+    const CURRENT_VERSION = '1.0.9';
+    if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          for (let name of names) caches.delete(name);
+        });
+      }
+      localStorage.setItem('app_version', CURRENT_VERSION);
+    }
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('Service Worker registrado'))
+          .then(reg => {
+            console.log('Service Worker registrado');
+            reg.onupdatefound = () => {
+              const installingWorker = reg.installing;
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  window.location.reload();
+                }
+              };
+            };
+          })
           .catch(err => console.log('Error registro SW', err));
       });
     }
