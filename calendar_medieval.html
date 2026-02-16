@@ -393,13 +393,17 @@
             background: var(--bg-surface);
             border: var(--border-width) var(--border-style) var(--border-color);
             border-radius: var(--border-radius-lg);
-            padding: 8px 15px;
+            padding: 10px 15px;
             box-shadow: var(--shadow-ui);
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 15px;
             margin-bottom: 10px;
+            position: relative;
+            /* Para el botón de mute */
+            flex-wrap: wrap;
+            /* Para fuentes grandes */
         }
 
         .greeting-text {
@@ -445,6 +449,8 @@
         .summary-cards {
             display: flex !important;
             flex-direction: row !important;
+            flex-wrap: wrap !important;
+            /* Para que no desborde con fuentes grandes */
             gap: 12px;
             margin-bottom: 10px;
         }
@@ -491,8 +497,8 @@
         }
 
         .home-events-list {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 10px;
             margin-bottom: 12px;
         }
@@ -507,6 +513,9 @@
             gap: 12px;
             box-shadow: var(--shadow-ui);
             transition: all 0.3s;
+            flex-wrap: wrap;
+            /* Por si el texto es muy largo */
+            word-break: break-word;
         }
 
         .home-event-item:hover {
@@ -869,10 +878,13 @@
             max-width: 500px;
             width: 100%;
             max-height: 90vh;
-            overflow-y: auto;
-            overflow-x: hidden;
+            /* Límite de altura */
+            overflow: hidden;
+            /* El scroll lo maneja el body */
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         .modal-header {
@@ -890,6 +902,8 @@
 
         .modal-body {
             padding: 20px;
+            overflow-y: auto;
+            flex: 1;
         }
 
         .notes-list {
@@ -2177,13 +2191,13 @@
                         style="font-style: italic; font-size: 0.85em; color: var(--text-muted); margin-top: 4px; border-left: 2px solid var(--accent-gold); padding-left: 8px;">
                     </div>
                 </div>
-                <div class="greeting-avatar-container" style="position: relative;">
+                <div class="greeting-avatar-container">
                     <div class="greeting-avatar" id="homeAvatar">👤</div>
-                    <button id="muteBtn" onclick="toggleSilence()"
-                        style="position: absolute; bottom: -5px; right: -5px; background: var(--bg-surface); border: 1px solid var(--gold-leaf); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; box-shadow: var(--shadow-ui); z-index: 10;">
-                        🔊
-                    </button>
                 </div>
+                <button id="muteBtn" onclick="toggleSilence()"
+                    style="position: absolute; top: 10px; right: 10px; background: var(--bg-surface); border: 1px solid var(--gold-leaf); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; box-shadow: var(--shadow-ui); z-index: 100;">
+                    🔊
+                </button>
             </div>
 
             <div class="summary-cards">
@@ -2455,12 +2469,13 @@
 
     <!-- Modal de Lista de la Compra -->
     <div class="modal" id="shoppingModal">
-        <div class="modal-content" style="max-width: 400px; height: 700px; border-style: double;">
+        <div class="modal-content" style="max-width: 400px; max-height: 90vh; border-style: double;">
             <div class="modal-header">
                 <div>📜 Lista de la Compra Real</div>
                 <div style="cursor: pointer;" onclick="closeShoppingModal()">✕</div>
             </div>
-            <div class="modal-body" style="padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+            <div class="modal-body"
+                style="padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1;">
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="shoppingInput" class="notes-input" placeholder="Añadir víveres..."
                         list="masterSuppliesDatalist">

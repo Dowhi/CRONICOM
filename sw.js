@@ -1,8 +1,8 @@
-const CACHE_NAME = 'chronicon-v4';
+const CACHE_NAME = 'chronicon-v5';
 const ASSETS = [
     './',
     './index.html',
-    './calendar_medieval.html?v=1.0.3',
+    './calendar_medieval.html?v=1.0.4',
     './favicon.png',
     './manifest.json',
     './dragon.mp3'
