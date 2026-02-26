@@ -4364,21 +4364,17 @@
         function medievalPreview(html) {
             if (!html) return '';
 
-            // 1. Decodificar entidades recursivamente (maneja &amp;lt;b&amp;gt;)
-            const decoder = document.createElement('div');
+            // 1. Decodificar entidades de forma segura sin perder etiquetas HTML (como el tachado)
+            const txt = document.createElement('textarea');
             let decoded = html;
-            let last = '';
-            let safety = 0;
-            while (decoded !== last && safety < 5) {
-                last = decoded;
-                decoder.innerHTML = decoded;
-                decoded = decoder.textContent || decoder.innerText || '';
-                if (!decoded.includes('&') && !decoded.includes('<')) break;
-                safety++;
+            for (let i = 0; i < 3; i++) {
+                txt.innerHTML = decoded;
+                if (txt.value === decoded) break;
+                decoded = txt.value;
             }
 
             // 2. Limpiar etiquetas de bloque y reemplazarlas por espacios
-            // Volvemos a meter el texto decodificado en el div para manipular el DOM
+            const decoder = document.createElement('div');
             decoder.innerHTML = decoded;
 
             // Reemplazar <br>, <div>, <p> por espacios

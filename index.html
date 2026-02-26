@@ -59,7 +59,7 @@
     </div>
   </div>
 
-  <iframe class="app-frame" src="calendar_medieval.html?v=1.1.9" title="Calendario Medieval"></iframe>
+  <iframe class="app-frame" src="calendar_medieval.html?v=1.2.0" title="Calendario Medieval"></iframe>
 
   <script>
     const intro = document.getElementById('introContainer');
@@ -102,7 +102,7 @@
     setTimeout(hideIntro, 15000);
 
     // Script de limpieza agresiva de caché si la versión es nueva
-    const CURRENT_VERSION = '1.1.9';
+    const CURRENT_VERSION = '1.2.0';
     if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
       if ('caches' in window) {
         caches.keys().then(names => {
