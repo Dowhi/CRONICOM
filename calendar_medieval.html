@@ -1358,6 +1358,167 @@
             }
         }
 
+        /* --- ESTILOS COMPRA REAL PREMIUM --- */
+        .shopping-category-header {
+            font-family: var(--font-header);
+            font-size: 11px;
+            color: var(--accent-red);
+            font-weight: 700;
+            padding: 4px 8px;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.03);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .shopping-item-container {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+            touch-action: pan-y;
+        }
+
+        .shopping-item-swipe-bg {
+            position: absolute;
+            inset: 0;
+            background: var(--accent-red);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 20px;
+            color: white;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .shopping-item-content {
+            position: relative;
+            z-index: 2;
+            background: var(--bg-surface);
+            transition: transform 0.2s;
+        }
+
+        .ink-strikethrough {
+            position: relative;
+            display: inline-block;
+        }
+
+        .ink-strikethrough::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 55%;
+            width: 0;
+            height: 2px;
+            background: var(--accent-red);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: rotate(-1deg);
+            opacity: 0.7;
+        }
+
+        .item-done .ink-strikethrough::after {
+            width: 100%;
+        }
+
+        .item-done {
+            opacity: 0.6;
+        }
+
+        /* Modo Tienda */
+        .shop-mode-active #shoppingModal .modal-content {
+            max-width: 100vw !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            border: none;
+            border-radius: 0;
+        }
+
+        .shop-mode-active .shopping-item-text {
+            font-size: 1.25em !important;
+            padding: 8px 0;
+        }
+
+        .quantity-badge {
+            background: var(--accent-gold);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 6px;
+            font-family: var(--font-header);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .shopping-tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 10px;
+        }
+
+        .shopping-tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            font-family: var(--font-header);
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.3s;
+        }
+
+        .shopping-tab.active {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 -3px 0 var(--accent-red);
+        }
+
+        .stock-indicator {
+            font-size: 9px;
+            color: #2e7d32;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* Colores por Categoría (Bordes) */
+        .cat-despensa {
+            border-left: 4px solid #8d6e63 !important;
+        }
+
+        .cat-nevera {
+            border-left: 4px solid #4fc3f7 !important;
+        }
+
+        .cat-limpieza {
+            border-left: 4px solid #ba68c8 !important;
+        }
+
+        .cat-higiene {
+            border-left: 4px solid #4db6ac !important;
+        }
+
+        .cat-otros {
+            border-left: 4px solid #9e9e9e !important;
+        }
+
+        /* Estilo para edición en línea */
+        .inline-edit-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed var(--gold-leaf);
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            width: 100%;
+            outline: none;
+            padding: 0;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
 
@@ -2478,40 +2639,66 @@
         </div>
     </div>
 
-    <!-- Modal de Lista de la Compra -->
+    <!-- Modal de Lista de la Compra Real -->
     <div class="modal" id="shoppingModal">
-        <div class="modal-content" style="max-width: 400px; max-height: 90vh; border-style: double;">
+        <div class="modal-content" style="max-width: 450px; max-height: 95vh; border-style: double;">
             <div class="modal-header"
                 style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px;">
-                <div style="display: flex; align-items: center; gap: 8px;">📜 Lista de la Compra Real</div>
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <div
-                        style="display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; border: 1px solid var(--gold-leaf);">
-                        <span style="font-size: 10px;">A</span>
-                        <input type="range" id="shoppingZoomSlider" min="12" max="30" value="14"
-                            style="width: 60px; height: 4px; cursor: pointer; accent-color: var(--accent-red);"
-                            oninput="updateShoppingZoom(this.value)">
-                        <span style="font-size: 16px;">A</span>
-                    </div>
-                    <div style="cursor: pointer; font-size: 20px; font-weight: bold;" onclick="closeShoppingModal()">✕
-                    </div>
+                <div style="display: flex; align-items: center; gap: 8px;">📜 Compra Real</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="header-btn" onclick="toggleShopMode()" title="Modo Tienda (Grande)"
+                        style="font-size: 14px; padding: 4px 8px;">🛒</button>
+                    <button class="header-btn" onclick="copyShoppingList()" title="Copiar Pergamino"
+                        style="font-size: 14px; padding: 4px 8px;">📋</button>
+                    <div style="cursor: pointer; font-size: 20px; font-weight: bold; margin-left: 5px;"
+                        onclick="closeShoppingModal()">✕</div>
                 </div>
             </div>
+
+            <!-- Pestañas de la Lista -->
+            <div class="shopping-tabs">
+                <div class="shopping-tab active" id="tabModeBuy" onclick="setShoppingTab('buy')">🛍️ COMPRA</div>
+                <div class="shopping-tab" id="tabModeStock" onclick="setShoppingTab('stock')">📦 BAZAR (STOCK)</div>
+            </div>
+
             <div class="modal-body"
-                style="padding: 15px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1;">
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="shoppingInput" class="notes-input" placeholder="Añadir víveres..."
-                        list="masterSuppliesDatalist">
-                    <datalist id="masterSuppliesDatalist"></datalist>
-                    <button class="btn btn-accept" onclick="addShoppingItem()">Añadir</button>
+                style="padding: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: hidden; flex: 1;">
+
+                <!-- Buscador / Añadidor -->
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" id="shoppingInput" class="notes-input" placeholder="Añadir víveres..."
+                            list="masterSuppliesDatalist" onkeyup="filterShoppingItems(this.value)">
+                        <datalist id="masterSuppliesDatalist"></datalist>
+                        <button class="btn btn-accept" onclick="addShoppingItem()" style="padding: 0 15px;">✙</button>
+                    </div>
+                    <div id="shoppingSearchHint"
+                        style="font-size: 10px; color: var(--sepia); font-style: italic; display: none;">Filtrando
+                        pergamino...</div>
                 </div>
+
+                <!-- Lista de Items -->
                 <div id="shoppingListItems"
-                    style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
-                    <!-- Items -->
+                    style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 2px;">
+                    <!-- Los items se cargan aquí -->
                 </div>
-                <div style="display: flex; gap: 8px;">
+
+                <!-- Acciones Rápidas -->
+                <div
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-top: 5px; border-top: 1px dashed var(--gold-leaf);">
+                    <button class="btn btn-cancel" onclick="clearShoppingChecks()"
+                        style="font-size: 10px; padding: 6px;">🧹 DESMARCAR</button>
                     <button class="btn btn-cancel" onclick="clearShoppingList()"
-                        style="width: 100%; font-size: 11px; padding: 4px;">🔥 VACIAR PERGAMINO</button>
+                        style="font-size: 10px; padding: 6px;">🔥 QUEMAR TODO</button>
+                </div>
+
+                <!-- Zoom / Tipografía (Solo en modo normal) -->
+                <div id="shoppingZoomControl"
+                    style="display: flex; align-items: center; justify-content: center; gap: 10px; padding-top: 5px;">
+                    <span style="font-size: 10px; color: var(--sepia);">TAMAÑO</span>
+                    <input type="range" id="shoppingZoomSlider" min="12" max="26" value="14"
+                        style="width: 100px; height: 4px; cursor: pointer; accent-color: var(--accent-red);"
+                        oninput="updateShoppingZoom(this.value)">
                 </div>
             </div>
         </div>
@@ -7888,22 +8075,19 @@
             quoteEl.textContent = `📜 "${quote}"`;
         }
 
-        // LISTA DE LA COMPRA REAL (Sincronizada con Firebase si está disponible)
+        // LISTA DE LA COMPRA REAL PREMIUM
+        let currentShoppingTab = 'buy';
+        let isShopModeActive = false;
+        let shoppingSearchQuery = '';
+
         function openShoppingList() {
             document.getElementById('shoppingModal').classList.add('show');
-
-            // Cargar zoom guardado
-            const savedZoom = localStorage.getItem('shopping_zoom_size') || '14';
-            const slider = document.getElementById('shoppingZoomSlider');
-            if (slider) slider.value = savedZoom;
-
             initShoppingDatalist();
             renderShoppingItems();
         }
 
-        function updateShoppingZoom(val) {
-            localStorage.setItem('shopping_zoom_size', val);
-            renderShoppingItems();
+        function closeShoppingModal() {
+            document.getElementById('shoppingModal').classList.remove('show');
         }
 
         function initShoppingDatalist() {
@@ -7919,8 +8103,30 @@
             datalist.innerHTML = html;
         }
 
-        function closeShoppingModal() {
-            document.getElementById('shoppingModal').classList.remove('show');
+        function setShoppingTab(tab) {
+            currentShoppingTab = tab;
+            document.getElementById('tabModeBuy').classList.toggle('active', tab === 'buy');
+            document.getElementById('tabModeStock').classList.toggle('active', tab === 'stock');
+            renderShoppingItems();
+        }
+
+        function toggleShopMode() {
+            isShopModeActive = !isShopModeActive;
+            document.body.classList.toggle('shop-mode-active', isShopModeActive);
+            document.getElementById('shoppingZoomControl').style.display = isShopModeActive ? 'none' : 'flex';
+            showToast(isShopModeActive ? '🛒 MODO TIENDA: On' : '📜 MODO PERGAMINO: On');
+            renderShoppingItems();
+        }
+
+        function filterShoppingItems(val) {
+            shoppingSearchQuery = val.toLowerCase();
+            document.getElementById('shoppingSearchHint').style.display = val ? 'block' : 'none';
+            renderShoppingItems();
+        }
+
+        function updateShoppingZoom(val) {
+            localStorage.setItem('shopping_zoom_size', val);
+            renderShoppingItems();
         }
 
         async function addShoppingItem() {
@@ -7930,14 +8136,22 @@
 
             const existingItems = await getShoppingItemsFromDB();
             const exists = existingItems.find(item => item.text.toLowerCase() === text.toLowerCase());
+
             if (exists) {
-                showToast(`⚠️ "${text}" ya está en el pergamino`);
+                if (exists.inStock && currentShoppingTab === 'buy') {
+                    // Si está en stock pero lo añadimos a compra, lo marcamos como "para comprar"
+                    await updateShoppingItem(exists.id || existingItems.indexOf(exists), { inStock: false, done: false });
+                    showToast(`🛍️ "${text}" movido de Bazar a Compra`);
+                } else {
+                    showToast(`⚠️ "${text}" ya está anotado`);
+                }
                 input.value = '';
+                renderShoppingItems();
                 return;
             }
 
-            let category = "Otros";
             const masterData = getMasterSupplyData();
+            let category = "Otros";
             for (const cat in masterData) {
                 if (masterData[cat].some(s => text.toLowerCase().includes(s.toLowerCase()))) {
                     category = cat;
@@ -7948,22 +8162,41 @@
             const newItem = {
                 text,
                 done: false,
+                inStock: currentShoppingTab === 'stock',
+                quantity: 1,
                 userId: getCurrentUserId(),
                 category,
                 timestamp: Date.now()
             };
 
-            if (isFirebaseConfigured && db) {
-                await db.collection('shopping_list').add(newItem);
-            } else {
-                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                items.push(newItem);
-                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
-            }
-
+            await saveNewShoppingItem(newItem);
             input.value = '';
             renderShoppingItems();
             showToast('🛒 Víveres anotados');
+        }
+
+        async function saveNewShoppingItem(item) {
+            if (isFirebaseConfigured && db) {
+                await db.collection('shopping_list').add(item);
+            } else {
+                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+                items.push(item);
+                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+            }
+        }
+
+        async function updateShoppingItem(id, data, index = -1) {
+            if (isFirebaseConfigured && db && id && typeof id === 'string') {
+                await db.collection('shopping_list').doc(id).update(data);
+            } else {
+                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+                const idx = index !== -1 ? index : items.findIndex((_, i) => i == id);
+                if (idx !== -1) {
+                    items[idx] = { ...items[idx], ...data };
+                    localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+                }
+            }
+            renderShoppingItems();
         }
 
         async function getShoppingItemsFromDB() {
@@ -7977,46 +8210,229 @@
         async function renderShoppingItems() {
             const container = document.getElementById('shoppingListItems');
             if (!container) return;
-            const items = await getShoppingItemsFromDB();
+            let items = await getShoppingItemsFromDB();
             container.innerHTML = '';
 
-            const sortedItems = items.sort((a, b) => {
-                if (a.done !== b.done) return a.done - b.done;
-                return a.text.localeCompare(b.text);
+            // Filtrar por Pestaña
+            items = items.filter(item => {
+                const matchesTab = (currentShoppingTab === 'buy') ? !item.inStock : item.inStock;
+                const matchesSearch = item.text.toLowerCase().includes(shoppingSearchQuery);
+                return matchesTab && matchesSearch;
+            });
+
+            // Agrupar por Categoría
+            const categories = {};
+            items.forEach(item => {
+                if (!categories[item.category]) categories[item.category] = [];
+                categories[item.category].push(item);
             });
 
             const fontSize = localStorage.getItem('shopping_zoom_size') || '14';
+            const catNames = Object.keys(categories).sort();
 
-            sortedItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'medieval-section';
-                div.style.padding = '4px 8px';
-                div.style.display = 'flex';
-                div.style.justifyContent = 'space-between';
-                div.style.alignItems = 'center';
-                div.style.margin = '0 0 2px 0';
-                div.style.minHeight = (parseInt(fontSize) + 12) + 'px';
-                div.innerHTML = `
-                    <span style="font-family: Arial, sans-serif; font-size: ${fontSize}px; font-weight: 500; ${item.done ? 'opacity: 0.4' : ''}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; line-height: 1.2;">${item.text}</span>
-                    <div style="display:flex; gap:4px;">
-                        <button class="btn" style="padding: 4px 8px; font-size: ${Math.max(12, fontSize - 2)}px; border-width: 1px; min-height: ${Math.max(24, fontSize)}px;" onclick="toggleShoppingItem('${item.id || ''}', ${items.indexOf(item)})">${item.done ? '✅' : '⬜'}</button>
-                        <button class="btn btn-cancel" style="padding: 4px 8px; font-size: ${Math.max(12, fontSize - 2)}px; border-width: 1px; min-height: ${Math.max(24, fontSize)}px;" onclick="removeShoppingItem('${item.id || ''}', ${items.indexOf(item)})">🗑️</button>
-                    </div>
-                `;
-                container.appendChild(div);
+            if (items.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 40px 10px; color: var(--sepia); font-style: italic; opacity: 0.6;">
+                    ${shoppingSearchQuery ? 'No se hallaron tales víveres...' : (currentShoppingTab === 'buy' ? 'El pergamino está en blanco' : 'El bazar está vacío')}
+                </div>`;
+                return;
+            }
+
+            catNames.forEach(cat => {
+                const catItems = categories[cat].sort((a, b) => {
+                    if (a.done !== b.done) return a.done - b.done;
+                    return a.text.localeCompare(b.text);
+                });
+
+                // Cabecera Categoría
+                const header = document.createElement('div');
+                header.className = 'shopping-category-header';
+                header.innerHTML = `<span>${getCategoryIcon(cat)} ${cat}</span> <span style="font-size: 9px; opacity: 0.5;">${catItems.length}</span>`;
+                container.appendChild(header);
+
+                catItems.forEach(item => {
+                    const itemIdx = items.indexOf(item); // Aproximado para local
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = `shopping-item-container cat-${cat.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`;
+
+                    itemDiv.innerHTML = `
+                        <div class="shopping-item-swipe-bg"><span>ELIMINAR 🗑️</span></div>
+                        <div class="shopping-item-content medieval-section ${item.done ? 'item-done' : ''}" 
+                             style="padding: 6px 8px; display: flex; align-items: center; gap: 8px; margin: 0; min-height: 44px; border-style: none; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                            
+                            <div style="cursor: pointer; font-size: 1.2em;" onclick="toggleShoppingItem('${item.id || ''}', ${itemIdx})">
+                                ${item.done ? '✅' : '⬜'}
+                            </div>
+
+                            <div style="flex: 1; display: flex; align-items: center; overflow: hidden;" onclick="startInlineEdit(this, '${item.id || ''}', ${itemIdx})">
+                                <span class="shopping-item-text ink-strikethrough" style="font-size: ${fontSize}px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${item.text}
+                                </span>
+                                ${item.quantity > 1 ? `<span class="quantity-badge" onclick="cycleQuantity(event, '${item.id || ''}', ${itemIdx}, ${item.quantity})">x${item.quantity}</span>` : ''}
+                            </div>
+
+                            <div style="display: flex; gap: 10px;">
+                                ${currentShoppingTab === 'buy' ?
+                            (item.quantity === 1 ? `<button class="header-btn" style="padding: 2px 6px; font-size: 10px;" onclick="cycleQuantity(event, '${item.id || ''}', ${itemIdx}, 1)">+1</button>` : '')
+                            : `<button class="btn btn-accept" style="padding: 2px 6px; font-size: 10px;" onclick="addToBuyFromStock('${item.id || ''}', ${itemIdx})">📦 → 🛍️</button>`
+                        }
+                                <div style="opacity: 0.2; cursor: pointer;" onclick="removeShoppingItem('${item.id || ''}', ${itemIdx})">🗑️</div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Swipe Logic
+                    setupSwipeToDelete(itemDiv, () => removeShoppingItem(item.id || '', itemIdx));
+
+                    container.appendChild(itemDiv);
+                });
             });
         }
 
+        function getCategoryIcon(cat) {
+            const icons = {
+                "Despensa": "🌾",
+                "Nevera y congelador": "❄️",
+                "Especias y salsas": "🧪",
+                "Limpieza del hogar": "🧹",
+                "Baño e higiene personal": "🧼",
+                "Otros": "📦"
+            };
+            return icons[cat] || "📜";
+        }
+
         async function toggleShoppingItem(id, index) {
-            if (isFirebaseConfigured && db && id) {
-                const doc = await db.collection('shopping_list').doc(id).get();
-                await db.collection('shopping_list').doc(id).update({ done: !doc.data().done });
-            } else {
-                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                items[index].done = !items[index].done;
-                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+            const items = await getShoppingItemsFromDB();
+            const item = id ? items.find(it => it.id === id) : items[index];
+            const newDone = !item.done;
+
+            await updateShoppingItem(id || index, { done: newDone });
+
+            if (newDone && currentShoppingTab === 'buy') {
+                showToast('✅ Añadido al saco');
+                // Al marcar como hecho, si es algo de stock, podríamos preguntar si queremos devolverlo a bazar
+                // Pero por ahora solo lo tachamos.
             }
-            renderShoppingItems();
+        }
+
+        async function cycleQuantity(event, id, index, current) {
+            event.stopPropagation();
+            const next = current >= 5 ? 1 : current + 1;
+            await updateShoppingItem(id || index, { quantity: next });
+        }
+
+        async function addToBuyFromStock(id, index) {
+            await updateShoppingItem(id || index, { inStock: false, done: false });
+            showToast('🛍️ Movido a la lista de compra');
+            setShoppingTab('buy');
+        }
+
+        function startInlineEdit(el, id, index) {
+            if (isShopModeActive) return; // No editar en modo tienda
+            const span = el.querySelector('.shopping-item-text');
+            const originalText = span.textContent.trim();
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'inline-edit-input';
+            input.value = originalText;
+
+            span.style.display = 'none';
+            el.appendChild(input);
+            input.focus();
+
+            const finishEdit = async () => {
+                const newText = input.value.trim();
+                if (newText && newText !== originalText) {
+                    await updateShoppingItem(id || index, { text: newText });
+                } else {
+                    span.style.display = 'block';
+                    input.remove();
+                }
+            };
+
+            input.onblur = finishEdit;
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') finishEdit();
+                if (e.key === 'Escape') {
+                    input.onblur = null;
+                    span.style.display = 'block';
+                    input.remove();
+                }
+            };
+        }
+
+        function setupSwipeToDelete(el, onDelete) {
+            let startX = 0;
+            let currentX = 0;
+            const content = el.querySelector('.shopping-item-content');
+            const bg = el.querySelector('.shopping-item-swipe-bg');
+
+            el.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+            }, { passive: true });
+
+            el.addEventListener('touchmove', (e) => {
+                currentX = e.touches[0].clientX;
+                const diff = startX - currentX;
+                if (diff > 50) {
+                    content.style.transform = `translateX(-${Math.min(diff, 100)}px)`;
+                    bg.style.opacity = Math.min(diff / 100, 1);
+                }
+            }, { passive: true });
+
+            el.addEventListener('touchend', () => {
+                const diff = startX - currentX;
+                if (diff > 80) {
+                    onDelete();
+                } else {
+                    content.style.transform = '';
+                    bg.style.opacity = 0;
+                }
+            });
+        }
+
+        async function clearShoppingChecks() {
+            const items = await getShoppingItemsFromDB();
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].done) {
+                    await updateShoppingItem(items[i].id || i, { done: false });
+                }
+            }
+            showToast('🧹 Pergamino limpiado');
+        }
+
+        async function copyShoppingList() {
+            const items = await getShoppingItemsFromDB();
+            const toBuy = items.filter(it => !it.inStock && !it.done);
+
+            if (toBuy.length === 0) {
+                showToast('⚠️ No hay nada pendiente para comprar');
+                return;
+            }
+
+            let text = "📜 *LISTA DE LA COMPRA REAL* 📜\n\n";
+            const cats = {};
+            toBuy.forEach(it => {
+                if (!cats[it.category]) cats[it.category] = [];
+                cats[it.category].push(it);
+            });
+
+            for (const cat in cats) {
+                text += `*${cat.toUpperCase()}*\n`;
+                cats[cat].forEach(it => {
+                    text += `- ${it.text}${it.quantity > 1 ? ` (x${it.quantity})` : ''}\n`;
+                });
+                text += "\n";
+            }
+            text += "_Enviado desde Chronicon_";
+
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('📋 Pergamino copiado al portapapeles');
+            } catch (e) {
+                console.error(text);
+                showToast('❌ Error al copiar (ver consola)');
+            }
         }
 
         async function removeShoppingItem(id, index) {
@@ -8054,23 +8470,15 @@
             for (const category in masterData) {
                 for (const text of masterData[category]) {
                     if (!existingItems.find(item => item.text.toLowerCase() === text.toLowerCase())) {
-                        const newItem = { text, done: false, userId, category, timestamp: Date.now() };
-                        if (isFirebaseConfigured && db) {
-                            await db.collection('shopping_list').add(newItem);
-                        } else {
-                            existingItems.push(newItem);
-                        }
+                        const newItem = { text, done: false, inStock: true, quantity: 1, userId, category, timestamp: Date.now() };
+                        await saveNewShoppingItem(newItem);
                         addedCount++;
                     }
                 }
             }
 
-            if (!isFirebaseConfigured || !db) {
-                localStorage.setItem('medieval_shopping_list', JSON.stringify(existingItems));
-            }
-
             renderShoppingItems();
-            showToast(`📦 ${addedCount} suministros básicos cargados`);
+            showToast(`📦 ${addedCount} suministros cargados al Bazar`);
         }
 
         // EL ORÁCULO (Resumen semanal)
@@ -8236,13 +8644,13 @@
                 ],
                 "Limpieza del hogar": [
                     "Detergente para lavadora", "Suavizante", "Detergente lavavajillas",
-                    "Estropajos", "Bayetas de microfibra", "Lejía",
+                    "Estropajos", "Lejía",
                     "Bolsas de basura", "Papel de cocina"
                 ],
                 "Baño e higiene personal": [
                     "Papel higiénico", "Gel de baño", "Champú", "Desodorante",
-                    "Pasta de dientes", "Cepillos de dientes",
-                    "Maquinillas de afeitar", "Toallitas", "Pañuelos de papel"
+                    "Cepillos de dientes",
+                    "Toallitas", "Pañuelos de papel"
                 ],
 
             };
