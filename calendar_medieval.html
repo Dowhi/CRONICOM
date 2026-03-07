@@ -1443,6 +1443,31 @@
             padding: 8px 0;
         }
 
+        /* Scrollbar Estilo Medieval de Alto Contraste */
+        #shoppingListItems::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #shoppingListItems::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 5px;
+        }
+
+        #shoppingListItems::-webkit-scrollbar-thumb {
+            background: #5d4037;
+            /* Marrón oscuro para máximo contraste */
+            border: 1px solid var(--gold-leaf);
+            border-radius: 5px;
+        }
+
+        #shoppingListItems {
+            scrollbar-width: thin;
+            scrollbar-color: #5d4037 rgba(0, 0, 0, 0.05);
+            overflow-y: auto !important;
+            padding-right: 8px;
+            /* No fijamos max-height aquí, dejamos que el flex del modal lo maneje */
+        }
+
         .quantity-badge {
             background: var(--accent-gold);
             color: var(--text-main);
@@ -2662,10 +2687,10 @@
             </div>
 
             <div class="modal-body"
-                style="padding: 10px; display: flex; flex-direction: column; gap: 10px; overflow-y: hidden; flex: 1;">
+                style="padding: 10px; display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow: hidden;">
 
                 <!-- Buscador / Añadidor -->
-                <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
                     <div style="display: flex; gap: 6px;">
                         <input type="text" id="shoppingInput" class="notes-input" placeholder="Añadir víveres..."
                             list="masterSuppliesDatalist" onkeyup="filterShoppingItems(this.value)">
@@ -2677,9 +2702,9 @@
                         pergamino...</div>
                 </div>
 
-                <!-- Lista de Items -->
+                <!-- Lista de Items (Se ajusta al espacio disponible) -->
                 <div id="shoppingListItems"
-                    style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 2px;">
+                    style="flex: 1; overflow-y: auto !important; min-height: 100px; padding-right: 5px;">
                     <!-- Los items se cargan aquí -->
                 </div>
 
@@ -8105,6 +8130,12 @@
 
         function setShoppingTab(tab) {
             currentShoppingTab = tab;
+            shoppingSearchQuery = '';
+            const input = document.getElementById('shoppingInput');
+            if (input) input.value = '';
+            const hint = document.getElementById('shoppingSearchHint');
+            if (hint) hint.style.display = 'none';
+
             document.getElementById('tabModeBuy').classList.toggle('active', tab === 'buy');
             document.getElementById('tabModeStock').classList.toggle('active', tab === 'stock');
             renderShoppingItems();
@@ -8140,12 +8171,13 @@
             if (exists) {
                 if (exists.inStock && currentShoppingTab === 'buy') {
                     // Si está en stock pero lo añadimos a compra, lo marcamos como "para comprar"
-                    await updateShoppingItem(exists.id || existingItems.indexOf(exists), { inStock: false, done: false });
+                    await updateShoppingItem(exists.id, { inStock: false, done: false });
                     showToast(`🛍️ "${text}" movido de Bazar a Compra`);
                 } else {
                     showToast(`⚠️ "${text}" ya está anotado`);
                 }
                 input.value = '';
+                shoppingSearchQuery = '';
                 renderShoppingItems();
                 return;
             }
@@ -8171,6 +8203,10 @@
 
             await saveNewShoppingItem(newItem);
             input.value = '';
+            shoppingSearchQuery = ''; // Limpiar búsqueda al añadir
+            const hint = document.getElementById('shoppingSearchHint');
+            if (hint) hint.style.display = 'none';
+
             renderShoppingItems();
             showToast('🛒 Víveres anotados');
         }
@@ -8185,12 +8221,13 @@
             }
         }
 
-        async function updateShoppingItem(id, data, index = -1) {
-            if (isFirebaseConfigured && db && id && typeof id === 'string') {
+        async function updateShoppingItem(id, data) {
+            if (isFirebaseConfigured && db && id && typeof id === 'string' && id.length > 5) {
                 await db.collection('shopping_list').doc(id).update(data);
             } else {
                 const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                const idx = index !== -1 ? index : items.findIndex((_, i) => i == id);
+                // Buscar por ID o por timestamp (como fallback de ID)
+                const idx = items.findIndex(it => (it.id === id) || (it.timestamp == id));
                 if (idx !== -1) {
                     items[idx] = { ...items[idx], ...data };
                     localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
@@ -8200,35 +8237,29 @@
         }
 
         async function getShoppingItemsFromDB() {
+            let items = [];
             if (isFirebaseConfigured && db) {
                 const snapshot = await db.collection('shopping_list').get();
-                return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } else {
+                items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
             }
-            return JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+            // Asegurarnos de que todos tengan una propiedad ID o timestamp para el manejo
+            return items.map(it => ({ ...it, id: it.id || it.timestamp || Date.now() }));
         }
 
         async function renderShoppingItems() {
             const container = document.getElementById('shoppingListItems');
             if (!container) return;
-            let items = await getShoppingItemsFromDB();
+            let fullItems = await getShoppingItemsFromDB();
             container.innerHTML = '';
 
-            // Filtrar por Pestaña
-            items = items.filter(item => {
+            // Filtrar por Pestaña y Búsqueda
+            let items = fullItems.filter(item => {
                 const matchesTab = (currentShoppingTab === 'buy') ? !item.inStock : item.inStock;
                 const matchesSearch = item.text.toLowerCase().includes(shoppingSearchQuery);
                 return matchesTab && matchesSearch;
             });
-
-            // Agrupar por Categoría
-            const categories = {};
-            items.forEach(item => {
-                if (!categories[item.category]) categories[item.category] = [];
-                categories[item.category].push(item);
-            });
-
-            const fontSize = localStorage.getItem('shopping_zoom_size') || '14';
-            const catNames = Object.keys(categories).sort();
 
             if (items.length === 0) {
                 container.innerHTML = `<div style="text-align:center; padding: 40px 10px; color: var(--sepia); font-style: italic; opacity: 0.6;">
@@ -8236,6 +8267,17 @@
                 </div>`;
                 return;
             }
+
+            // Agrupar por Categoría
+            const categories = {};
+            items.forEach(item => {
+                const cat = item.category || "Otros";
+                if (!categories[cat]) categories[cat] = [];
+                categories[cat].push(item);
+            });
+
+            const fontSize = localStorage.getItem('shopping_zoom_size') || '14';
+            const catNames = Object.keys(categories).sort();
 
             catNames.forEach(cat => {
                 const catItems = categories[cat].sort((a, b) => {
@@ -8250,38 +8292,38 @@
                 container.appendChild(header);
 
                 catItems.forEach(item => {
-                    const itemIdx = items.indexOf(item); // Aproximado para local
                     const itemDiv = document.createElement('div');
-                    itemDiv.className = `shopping-item-container cat-${cat.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`;
+                    const catClass = cat.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    itemDiv.className = `shopping-item-container cat-${catClass}`;
 
                     itemDiv.innerHTML = `
                         <div class="shopping-item-swipe-bg"><span>ELIMINAR 🗑️</span></div>
                         <div class="shopping-item-content medieval-section ${item.done ? 'item-done' : ''}" 
                              style="padding: 6px 8px; display: flex; align-items: center; gap: 8px; margin: 0; min-height: 44px; border-style: none; border-bottom: 1px solid rgba(0,0,0,0.05);">
                             
-                            <div style="cursor: pointer; font-size: 1.2em;" onclick="toggleShoppingItem('${item.id || ''}', ${itemIdx})">
+                            <div style="cursor: pointer; font-size: 1.2em;" onclick="toggleShoppingItem('${item.id}')">
                                 ${item.done ? '✅' : '⬜'}
                             </div>
 
-                            <div style="flex: 1; display: flex; align-items: center; overflow: hidden;" onclick="startInlineEdit(this, '${item.id || ''}', ${itemIdx})">
+                            <div style="flex: 1; display: flex; align-items: center; overflow: hidden;" onclick="startInlineEdit(this, '${item.id}')">
                                 <span class="shopping-item-text ink-strikethrough" style="font-size: ${fontSize}px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     ${item.text}
                                 </span>
-                                ${item.quantity > 1 ? `<span class="quantity-badge" onclick="cycleQuantity(event, '${item.id || ''}', ${itemIdx}, ${item.quantity})">x${item.quantity}</span>` : ''}
+                                ${item.quantity > 1 ? `<span class="quantity-badge" onclick="cycleQuantity(event, '${item.id}', ${item.quantity})">x${item.quantity}</span>` : ''}
                             </div>
 
                             <div style="display: flex; gap: 10px;">
                                 ${currentShoppingTab === 'buy' ?
-                            (item.quantity === 1 ? `<button class="header-btn" style="padding: 2px 6px; font-size: 10px;" onclick="cycleQuantity(event, '${item.id || ''}', ${itemIdx}, 1)">+1</button>` : '')
-                            : `<button class="btn btn-accept" style="padding: 2px 6px; font-size: 10px;" onclick="addToBuyFromStock('${item.id || ''}', ${itemIdx})">📦 → 🛍️</button>`
+                            (item.quantity === 1 ? `<button class="header-btn" style="padding: 2px 6px; font-size: 10px;" onclick="cycleQuantity(event, '${item.id}', 1)">+1</button>` : '')
+                            : `<button class="btn btn-accept" style="padding: 2px 6px; font-size: 10px;" onclick="addToBuyFromStock('${item.id}')">📦 → 🛍️</button>`
                         }
-                                <div style="opacity: 0.2; cursor: pointer;" onclick="removeShoppingItem('${item.id || ''}', ${itemIdx})">🗑️</div>
+                                <div style="opacity: 0.2; cursor: pointer;" onclick="removeShoppingItem('${item.id}')">🗑️</div>
                             </div>
                         </div>
                     `;
 
                     // Swipe Logic
-                    setupSwipeToDelete(itemDiv, () => removeShoppingItem(item.id || '', itemIdx));
+                    setupSwipeToDelete(itemDiv, () => removeShoppingItem(item.id));
 
                     container.appendChild(itemDiv);
                 });
@@ -8300,12 +8342,13 @@
             return icons[cat] || "📜";
         }
 
-        async function toggleShoppingItem(id, index) {
+        async function toggleShoppingItem(id) {
             const items = await getShoppingItemsFromDB();
-            const item = id ? items.find(it => it.id === id) : items[index];
+            const item = items.find(it => it.id == id);
+            if (!item) return;
             const newDone = !item.done;
 
-            await updateShoppingItem(id || index, { done: newDone });
+            await updateShoppingItem(id, { done: newDone });
 
             if (newDone && currentShoppingTab === 'buy') {
                 showToast('✅ Añadido al saco');
@@ -8314,19 +8357,19 @@
             }
         }
 
-        async function cycleQuantity(event, id, index, current) {
+        async function cycleQuantity(event, id, current) {
             event.stopPropagation();
             const next = current >= 5 ? 1 : current + 1;
-            await updateShoppingItem(id || index, { quantity: next });
+            await updateShoppingItem(id, { quantity: next });
         }
 
-        async function addToBuyFromStock(id, index) {
-            await updateShoppingItem(id || index, { inStock: false, done: false });
+        async function addToBuyFromStock(id) {
+            await updateShoppingItem(id, { inStock: false, done: false });
             showToast('🛍️ Movido a la lista de compra');
             setShoppingTab('buy');
         }
 
-        function startInlineEdit(el, id, index) {
+        function startInlineEdit(el, id) {
             if (isShopModeActive) return; // No editar en modo tienda
             const span = el.querySelector('.shopping-item-text');
             const originalText = span.textContent.trim();
@@ -8343,7 +8386,7 @@
             const finishEdit = async () => {
                 const newText = input.value.trim();
                 if (newText && newText !== originalText) {
-                    await updateShoppingItem(id || index, { text: newText });
+                    await updateShoppingItem(id, { text: newText });
                 } else {
                     span.style.display = 'block';
                     input.remove();
@@ -8351,7 +8394,7 @@
             };
 
             input.onblur = finishEdit;
-            input.onkeydown = (e) => {
+            input.onkeyup = (e) => {
                 if (e.key === 'Enter') finishEdit();
                 if (e.key === 'Escape') {
                     input.onblur = null;
@@ -8435,13 +8478,16 @@
             }
         }
 
-        async function removeShoppingItem(id, index) {
-            if (isFirebaseConfigured && db && id) {
+        async function removeShoppingItem(id) {
+            if (isFirebaseConfigured && db && id && typeof id === 'string' && id.length > 5) {
                 await db.collection('shopping_list').doc(id).delete();
             } else {
                 const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                items.splice(index, 1);
-                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+                const idx = items.findIndex(it => (it.id === id) || (it.timestamp == id));
+                if (idx !== -1) {
+                    items.splice(idx, 1);
+                    localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+                }
             }
             renderShoppingItems();
         }
@@ -8470,7 +8516,15 @@
             for (const category in masterData) {
                 for (const text of masterData[category]) {
                     if (!existingItems.find(item => item.text.toLowerCase() === text.toLowerCase())) {
-                        const newItem = { text, done: false, inStock: true, quantity: 1, userId, category, timestamp: Date.now() };
+                        const newItem = {
+                            text,
+                            done: false,
+                            inStock: true,
+                            quantity: 1,
+                            userId,
+                            category,
+                            timestamp: Date.now() + Math.random()
+                        };
                         await saveNewShoppingItem(newItem);
                         addedCount++;
                     }
@@ -8610,24 +8664,6 @@
             document.getElementById('selectionModal').classList.remove('show');
         }
 
-        function addMasterSupplyList() {
-            const masterData = getMasterSupplyData();
-            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-            const userId = getCurrentUserId();
-
-            for (const category in masterData) {
-                masterData[category].forEach(text => {
-                    if (!items.find(item => item.text === text)) {
-                        items.push({ text, done: false, user: userId, category });
-                    }
-                });
-            }
-
-            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
-            renderShoppingItems();
-            showToast('📦 Suministros categorizados cargados');
-        }
-
         function getMasterSupplyData() {
             return {
                 "Despensa": [
@@ -8651,8 +8687,7 @@
                     "Papel higiénico", "Gel de baño", "Champú", "Desodorante",
                     "Cepillos de dientes",
                     "Toallitas", "Pañuelos de papel"
-                ],
-
+                ]
             };
         }
 
