@@ -1429,6 +1429,26 @@
             opacity: 0.6;
         }
 
+        .shopping-section-divider {
+            background: linear-gradient(to right, var(--accent-red), transparent);
+            color: white;
+            font-family: var(--font-header);
+            font-size: 9px;
+            font-weight: 800;
+            padding: 3px 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .shopping-section-divider.completed {
+            background: linear-gradient(to right, #6b6b6b, transparent);
+            opacity: 0.8;
+        }
+
         /* Modo Tienda */
         .shop-mode-active #shoppingModal .modal-content {
             max-width: 100vw !important;
@@ -8255,79 +8275,92 @@
             container.innerHTML = '';
 
             // Filtrar por Pestaña y Búsqueda
-            let items = fullItems.filter(item => {
+            let filtered = fullItems.filter(item => {
                 const matchesTab = (currentShoppingTab === 'buy') ? !item.inStock : item.inStock;
                 const matchesSearch = item.text.toLowerCase().includes(shoppingSearchQuery);
                 return matchesTab && matchesSearch;
             });
 
-            if (items.length === 0) {
+            if (filtered.length === 0) {
                 container.innerHTML = `<div style="text-align:center; padding: 40px 10px; color: var(--sepia); font-style: italic; opacity: 0.6;">
                     ${shoppingSearchQuery ? 'No se hallaron tales víveres...' : (currentShoppingTab === 'buy' ? 'El pergamino está en blanco' : 'El bazar está vacío')}
                 </div>`;
                 return;
             }
 
-            // Agrupar por Categoría
-            const categories = {};
-            items.forEach(item => {
-                const cat = item.category || "Otros";
-                if (!categories[cat]) categories[cat] = [];
-                categories[cat].push(item);
-            });
+            // Separar Pendientes de Completados
+            const pendingItems = filtered.filter(it => !it.done);
+            const completedItems = filtered.filter(it => it.done);
 
             const fontSize = localStorage.getItem('shopping_zoom_size') || '14';
-            const catNames = Object.keys(categories).sort();
 
-            catNames.forEach(cat => {
-                const catItems = categories[cat].sort((a, b) => {
-                    if (a.done !== b.done) return a.done - b.done;
-                    return a.text.localeCompare(b.text);
+            // Función ayudante para renderizar un grupo de ítems (pendientes o completados)
+            const renderGroup = (items, label, extraClass = '') => {
+                if (items.length === 0) return;
+
+                // Separador de Sección
+                const divider = document.createElement('div');
+                divider.className = `shopping-section-divider ${extraClass}`;
+                divider.innerHTML = label;
+                container.appendChild(divider);
+
+                // Agrupar por Categoría dentro del grupo
+                const categories = {};
+                items.forEach(item => {
+                    const cat = item.category || "Otros";
+                    if (!categories[cat]) categories[cat] = [];
+                    categories[cat].push(item);
                 });
 
-                // Cabecera Categoría
-                const header = document.createElement('div');
-                header.className = 'shopping-category-header';
-                header.innerHTML = `<span>${getCategoryIcon(cat)} ${cat}</span> <span style="font-size: 9px; opacity: 0.5;">${catItems.length}</span>`;
-                container.appendChild(header);
+                const catNames = Object.keys(categories).sort();
+                catNames.forEach(cat => {
+                    const catItems = categories[cat].sort((a, b) => a.text.localeCompare(b.text));
 
-                catItems.forEach(item => {
-                    const itemDiv = document.createElement('div');
-                    const catClass = cat.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    itemDiv.className = `shopping-item-container cat-${catClass}`;
+                    // Cabecera Categoría
+                    const header = document.createElement('div');
+                    header.className = 'shopping-category-header';
+                    header.innerHTML = `<span>${getCategoryIcon(cat)} ${cat}</span> <span style="font-size: 9px; opacity: 0.5;">${catItems.length}</span>`;
+                    container.appendChild(header);
 
-                    itemDiv.innerHTML = `
-                        <div class="shopping-item-swipe-bg"><span>ELIMINAR 🗑️</span></div>
-                        <div class="shopping-item-content medieval-section ${item.done ? 'item-done' : ''}" 
-                             style="padding: 6px 8px; display: flex; align-items: center; gap: 8px; margin: 0; min-height: 44px; border-style: none; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                            
-                            <div style="cursor: pointer; font-size: 1.2em;" onclick="toggleShoppingItem('${item.id}')">
-                                ${item.done ? '✅' : '⬜'}
-                            </div>
+                    catItems.forEach(item => {
+                        const itemDiv = document.createElement('div');
+                        const catClass = cat.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        itemDiv.className = `shopping-item-container cat-${catClass}`;
 
-                            <div style="flex: 1; display: flex; align-items: center; overflow: hidden;" onclick="startInlineEdit(this, '${item.id}')">
-                                <span class="shopping-item-text ink-strikethrough" style="font-size: ${fontSize}px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        itemDiv.innerHTML = `
+                            <div class="shopping-item-swipe-bg"><span>ELIMINAR 🗑️</span></div>
+                            <div class="shopping-item-content ${item.done ? 'item-done' : ''}" 
+                                 onclick="toggleShoppingItem('${item.id}')"
+                                 style="display: flex; align-items: center; padding: 6px 8px; gap: 10px; cursor: pointer; font-size: ${fontSize}px;">
+                                
+                                <div class="shopping-checkbox" style="width: 18px; height: 18px; border: 1.5px solid var(--accent-red); border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: ${item.done ? 'var(--accent-red)' : 'transparent'}; color: white; font-size: 12px;">
+                                    ${item.done ? '✓' : ''}
+                                </div>
+
+                                <div class="shopping-item-text ink-strikethrough" style="flex: 1; color: var(--text-dark); font-weight: 500;">
                                     ${item.text}
-                                </span>
-                                ${item.quantity > 1 ? `<span class="quantity-badge" onclick="cycleQuantity(event, '${item.id}', ${item.quantity})">x${item.quantity}</span>` : ''}
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 4px;" onclick="event.stopPropagation()">
+                                    <span class="quantity-badge" onclick="cycleQuantity(event, '${item.id}', ${item.quantity || 1})" style="cursor: pointer; font-size: 11px; font-weight: bold; min-width: 24px; text-align: center;">
+                                        ${item.quantity || 1}
+                                    </span>
+                                    ${currentShoppingTab === 'stock' ? `
+                                        <button class="header-btn" onclick="addToBuyFromStock('${item.id}')" title="Añadir a la compra" style="font-size: 12px; padding: 2px 4px;">🛒+</button>
+                                    ` : ''}
+                                    <button class="header-btn" onclick="startInlineEdit(this.parentElement.parentElement, '${item.id}')" title="Editar" style="font-size: 10px; padding: 2px 4px;">✏️</button>
+                                </div>
                             </div>
-
-                            <div style="display: flex; gap: 10px;">
-                                ${currentShoppingTab === 'buy' ?
-                            (item.quantity === 1 ? `<button class="header-btn" style="padding: 2px 6px; font-size: 10px;" onclick="cycleQuantity(event, '${item.id}', 1)">+1</button>` : '')
-                            : `<button class="btn btn-accept" style="padding: 2px 6px; font-size: 10px;" onclick="addToBuyFromStock('${item.id}')">📦 → 🛍️</button>`
-                        }
-                                <div style="opacity: 0.2; cursor: pointer;" onclick="removeShoppingItem('${item.id}')">🗑️</div>
-                            </div>
-                        </div>
-                    `;
-
-                    // Swipe Logic
-                    setupSwipeToDelete(itemDiv, () => removeShoppingItem(item.id));
-
-                    container.appendChild(itemDiv);
+                        `;
+                        container.appendChild(itemDiv);
+                        setupSwipeToDelete(itemDiv, item.id);
+                    });
                 });
-            });
+            };
+
+            // Renderizar los dos bloques
+            renderGroup(pendingItems, currentShoppingTab === 'buy' ? '🛒 Por comprar' : '📦 Pendiente revisar');
+            renderGroup(completedItems, currentShoppingTab === 'buy' ? '✅ Ya en el cesto' : '📦 En stock', 'completed');
         }
 
         function getCategoryIcon(cat) {
@@ -8461,9 +8494,9 @@
             });
 
             for (const cat in cats) {
-                text += `*${cat.toUpperCase()}*\n`;
+                text += `* ${cat.toUpperCase()}*\n`;
                 cats[cat].forEach(it => {
-                    text += `- ${it.text}${it.quantity > 1 ? ` (x${it.quantity})` : ''}\n`;
+                    text += `- ${it.text}${it.quantity > 1 ? ` (x${it.quantity})` : ''} \n`;
                 });
                 text += "\n";
             }
@@ -8583,7 +8616,7 @@
                         ambientAudio.src = SoundTracks[choice];
                     }
                     ambientAudio.play().then(() => {
-                        showToast(`🎵 Ambiente: ${choice}`);
+                        showToast(`🎵 Ambiente: ${choice} `);
                     }).catch(e => {
                         console.error('Audio error:', e);
                         showToast('❌ El bardo se ha quedado sin voz');
@@ -8614,8 +8647,8 @@
             document.getElementById('messageModalTitle').textContent = title;
             document.getElementById('messageModalBody').innerHTML = text.replace(/\n/g, '<br>');
             document.getElementById('messageModalActions').innerHTML = `
-                <button class="btn btn-accept" style="width: 100%;" onclick="closeMessageModal()">ENTENDIDO</button>
-            `;
+                            < button class="btn btn-accept" style = "width: 100%;" onclick = "closeMessageModal()" > ENTENDIDO</button >
+                                `;
             document.getElementById('messageModal').classList.add('show');
         }
 
@@ -8623,11 +8656,11 @@
             document.getElementById('messageModalTitle').textContent = title;
             document.getElementById('messageModalBody').innerHTML = text.replace(/\n/g, '<br>');
             document.getElementById('messageModalActions').innerHTML = `
-                <div style="display:flex; gap:10px; width:100%;">
+                                < div style = "display:flex; gap:10px; width:100%;" >
                     <button class="btn btn-cancel" style="flex:1;" onclick="closeMessageModal()">CANCELAR</button>
                     <button class="btn btn-accept" style="flex:1;" id="confirmOkBtn">ACEPTAR</button>
-                </div>
-            `;
+                </div >
+                `;
             document.getElementById('confirmOkBtn').onclick = () => {
                 onConfirm();
                 closeMessageModal();
