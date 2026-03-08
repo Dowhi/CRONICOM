@@ -7394,8 +7394,12 @@
                 // --- Registro para Notificaciones Push (Modo App Cerrada) ---
                 if (messaging) {
                     try {
+                        // Registrar el Service Worker explícitamente para evitar el error 404
+                        const registration = await navigator.serviceWorker.register('sw.js');
+
                         const token = await messaging.getToken({
-                            vapidKey: "BJJSfY2WiDFZmo_xgkxl_w1S2O9SLoOtASB33fluYE0JfcdSBe7nGbI0lqVUfgy7VKjMag7tP5RXps3x6sxBvow"
+                            vapidKey: "BJJSfY2WiDFZmo_xgkxl_w1S2O9SLoOtASB33fluYE0JfcdSBe7nGbI0lqVUfgy7VKjMag7tP5RXps3x6sxBvow",
+                            serviceWorkerRegistration: registration
                         });
                         if (token) {
                             console.log("Token de mensajería obtenido:", token);
