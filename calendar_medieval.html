@@ -1364,9 +1364,9 @@
             font-size: 11px;
             color: var(--accent-red);
             font-weight: 700;
-            padding: 4px 8px;
+            padding: 1px 8px;
             border-bottom: 1px solid var(--border-color);
-            margin-top: 10px;
+            margin-top: 1px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1401,6 +1401,115 @@
             z-index: 2;
             background: var(--bg-surface);
             transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1px 6px;
+            min-height: 24px;
+            gap: 4px;
+        }
+
+        .shopping-item-text {
+            flex: 1;
+            font-family: var(--font-main);
+            color: var(--text-main);
+            overflow-wrap: break-word;
+            line-height: 1.1;
+        }
+
+        .shopping-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .shopping-action-btn {
+            background: rgba(212, 175, 55, 0.15);
+            border: 1px solid var(--gold-leaf);
+            color: var(--text-main);
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .shopping-action-btn:hover {
+            background: var(--accent-gold);
+            transform: scale(1.1);
+        }
+
+        .qty-control {
+            display: flex;
+            align-items: center;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 6px;
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .qty-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            border: none;
+            background: var(--accent-gold);
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .qty-val {
+            min-width: 16px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: var(--midnight-blue);
+            font-family: var(--font-header);
+        }
+
+        .shopping-item-check {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: var(--accent-red);
+            background: white;
+            flex-shrink: 0;
+        }
+
+        .item-done .shopping-item-check {
+            background: var(--accent-red);
+            color: white;
+            border-color: var(--accent-red);
+        }
+
+        .item-done .shopping-item-text {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        #activeRecurringList .recurring-card {
+            transition: transform 0.2s;
+        }
+
+        #activeRecurringList .recurring-card:hover {
+            transform: scale(1.01);
         }
 
         .ink-strikethrough {
@@ -1438,7 +1547,7 @@
             padding: 3px 10px;
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-top: 15px;
+            margin-top: 4px;
             display: flex;
             align-items: center;
             border-radius: 4px 0 0 4px;
@@ -2044,6 +2153,10 @@
 
         #recurringModal #recDesc {
             height: 60px !important;
+        }
+
+        #activeRecurringList {
+            max-height: 400px !important;
         }
 
         #recurringModal .btn-accept {
@@ -3073,9 +3186,21 @@
                         </div>
                     </div>
 
-                    <div class="notes-control-group">
-                        <label class="notes-label">Hora</label>
-                        <input type="time" id="recTime" class="notes-input">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="notes-control-group">
+                            <label class="notes-label">Hora</label>
+                            <input type="time" id="recTime" class="notes-input">
+                        </div>
+                        <div class="notes-control-group">
+                            <label class="notes-label">Tamaño Texto</label>
+                            <select id="recFontSize" class="notes-select">
+                                <option value="8">Muy Pequeño</option>
+                                <option value="9" selected>Normal</option>
+                                <option value="11">Mediano</option>
+                                <option value="13">Grande</option>
+                                <option value="16">Extra Grande</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="notes-control-group">
@@ -3132,11 +3257,17 @@
                 <!-- Lista de Recurrentes -->
                 <div class="medieval-section" style="margin-bottom: 5px; padding: 10px;">
                     <div
-                        style="font-family: var(--font-header); color: var(--accent-red); font-weight: bold; margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); padding-bottom: 3px;">
-                        Eventos Recurrentes Activos
+                        style="font-family: var(--font-header); color: var(--accent-red); font-weight: bold; margin-bottom: 8px; text-transform: uppercase; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>Eventos Recurrentes Activos</span>
+                        <input type="text" placeholder="Buscar..." onkeyup="filterRecurringList(this.value)"
+                            style="font-size: 10px; padding: 2px 5px; width: 80px; border: 1px solid #ccc; border-radius: 4px; font-family: sans-serif;">
                     </div>
-                    <div id="activeRecurringList" style="max-height: 180px; overflow-y: auto;"></div>
+                    <div id="activeRecurringList" style="max-height: 400px; overflow-y: auto;"></div>
                 </div>
+
+                <!-- Espaciado final -->
+                <div style="height: 10px;"></div>
+
             </div>
         </div>
     </div>
@@ -6460,13 +6591,30 @@
             renderActiveRecurringList();
         }
 
+        let recurringSearchQuery = '';
+        function filterRecurringList(val) {
+            recurringSearchQuery = (val || '').toLowerCase().trim();
+            renderActiveRecurringList();
+        }
+
         function renderActiveRecurringList() {
             const list = document.getElementById('activeRecurringList');
             if (!list) return;
+
+            const zoomVal = localStorage.getItem('recurring_zoom_size') || '14';
+            const slider = document.getElementById('recurringZoomSlider');
+            if (slider) slider.value = zoomVal;
+
             list.innerHTML = '';
 
-            if (recurringEventsDefinitions.length === 0) {
-                list.innerHTML = '<div style="font-size:11px; color:#999; text-align:center; padding: 10px;">No hay eventos recurrentes activos</div>';
+            const filtered = recurringSearchQuery
+                ? recurringEventsDefinitions.filter(d => (d.title || '').toLowerCase().includes(recurringSearchQuery))
+                : recurringEventsDefinitions;
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div style="font-size:11px; color:#999; text-align:center; padding: 20px;">
+                    ${recurringSearchQuery ? 'No se hallaron eventos recurrentes' : 'No hay eventos recurrentes activos'}
+                </div>`;
                 return;
             }
 
@@ -6483,6 +6631,8 @@
                     }
                 } else if (val.seconds) {
                     d = new Date(val.seconds * 1000);
+                } else if (val.toDate) {
+                    d = val.toDate();
                 } else if (val instanceof Date) {
                     d = val;
                 } else {
@@ -6493,44 +6643,49 @@
                 return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             };
 
-            recurringEventsDefinitions.forEach(def => {
+            filtered.forEach(def => {
                 const card = document.createElement('div');
-                card.style.background = 'white';
-                card.style.border = '1px solid #ddd';
-                card.style.borderRadius = '4px';
-                card.style.padding = '8px';
-                card.style.fontSize = '12px';
+                card.className = 'medieval-section recurring-card';
+                card.style.padding = '8px 10px';
+
+                // Si el evento tiene su propio tamaño de fuente, lo usamos (escalado)
+                // Si no, usamos el valor heredado o por defecto
+                const displayFontSize = def.fontSize ? (def.fontSize * 1.5) : zoomVal;
+                card.style.fontSize = `${displayFontSize}px`;
                 card.style.position = 'relative';
-                card.style.marginBottom = '8px';
-                card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                card.style.marginBottom = '10px';
+                card.style.background = 'white';
+                card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
 
                 const title = document.createElement('div');
                 title.style.fontWeight = 'bold';
                 title.style.color = 'var(--midnight-blue)';
+                const titleFontSize = def.fontSize ? (def.fontSize * 1.7) : (parseInt(zoomVal) + 2);
+                title.style.fontSize = `${titleFontSize}px`;
                 title.textContent = def.title || 'Sin título';
 
                 const subtitle = document.createElement('div');
                 subtitle.style.color = '#777';
-                subtitle.style.fontSize = '10px';
+                subtitle.style.fontSize = `${parseInt(zoomVal) - 2}px`;
                 subtitle.style.marginTop = '4px';
                 const sDate = fmtDate(def.startDate || def.start);
                 const eDate = fmtDate(def.endDate);
-                const rangeStr = `${sDate} ${eDate ? '- ' + eDate : ''}`;
-                subtitle.innerHTML = `📅 ${rangeStr} | ⏰ ${def.time || '--:--'}`;
+                const rangeStr = `${sDate} ${eDate ? 'hasta ' + eDate : '(Sin fin)'}`;
+                subtitle.innerHTML = `📅 ${rangeStr}<br>⏰ ${def.time || 'Sin hora'}`;
 
                 const actions = document.createElement('div');
                 actions.style.position = 'absolute';
-                actions.style.top = '5px';
-                actions.style.right = '5px';
+                actions.style.top = '8px';
+                actions.style.right = '8px';
                 actions.style.display = 'flex';
-                actions.style.gap = '8px';
+                actions.style.gap = '12px';
 
                 const btnEdit = document.createElement('button');
-                btnEdit.innerHTML = '✏️';
+                btnEdit.innerHTML = '✒️';
                 btnEdit.style.background = 'none';
                 btnEdit.style.border = 'none';
                 btnEdit.style.cursor = 'pointer';
-                btnEdit.style.fontSize = '14px';
+                btnEdit.style.fontSize = '16px';
                 btnEdit.title = 'Editar';
                 btnEdit.onclick = () => editRecurringEvent(def);
 
@@ -6539,19 +6694,19 @@
                 btnDel.style.background = 'none';
                 btnDel.style.border = 'none';
                 btnDel.style.cursor = 'pointer';
-                btnDel.style.fontSize = '14px';
+                btnDel.style.fontSize = '16px';
                 btnDel.title = 'Eliminar';
                 btnDel.onclick = () => deleteRecurringEvent(def.id);
 
                 actions.appendChild(btnEdit);
                 actions.appendChild(btnDel);
-
                 card.appendChild(title);
                 card.appendChild(subtitle);
                 card.appendChild(actions);
                 list.appendChild(card);
             });
         }
+
 
         function editRecurringEvent(def) {
             editingRecurringId = def.id;
@@ -6575,6 +6730,7 @@
             document.getElementById('recFrequency').value = def.frequency || 'daily';
             document.getElementById('recInterval').value = def.interval || '1';
             document.getElementById('recUnit').value = def.unit || 'day';
+            document.getElementById('recFontSize').value = def.fontSize || '9';
 
             // Días de la semana
             const days = def.daysOfWeek || [];
@@ -6605,6 +6761,7 @@
             document.getElementById('recFrequency').value = 'daily';
             document.getElementById('recInterval').value = '1';
             document.getElementById('recUnit').value = 'day';
+            document.getElementById('recFontSize').value = '9';
             const checkboxes = document.querySelectorAll('input[name="recDay"]');
             checkboxes.forEach(cb => cb.checked = false);
 
@@ -6622,6 +6779,7 @@
             const frequency = document.getElementById('recFrequency').value;
             const interval = document.getElementById('recInterval').value;
             const unit = document.getElementById('recUnit').value;
+            const fontSize = document.getElementById('recFontSize').value || '9';
 
             const days = [];
             document.querySelectorAll('input[name="recDay"]:checked').forEach(cb => {
@@ -6643,6 +6801,7 @@
                 interval,
                 unit,
                 daysOfWeek: days,
+                fontSize: parseInt(fontSize),
                 userId: getCurrentUserId() || '1'
             };
 
@@ -6760,6 +6919,7 @@
                                     time: def.time || '',
                                     isRecurring: true,
                                     recurringId: def.id,
+                                    fontSize: def.fontSize || 9,
                                     category: def.category || (isLikeShift ? 'Turno Recurrente' : 'Recurrente'),
                                     userId: def.userId,
                                     backgroundColor: isLikeShift ? (shiftTemplates.find(t => (t.name || '').toLowerCase() === lowerTitle || (t.abbreviation || '').toLowerCase() === lowerTitle)?.backgroundColor || '#9E9E9E') : null
@@ -8180,65 +8340,83 @@
             renderShoppingItems();
         }
 
+        function updateRecurringZoom(val) {
+            localStorage.setItem('recurring_zoom_size', val);
+            renderActiveRecurringList();
+        }
+
         async function addShoppingItem() {
             const input = document.getElementById('shoppingInput');
             const text = input.value.trim();
             if (!text) return;
 
-            const existingItems = await getShoppingItemsFromDB();
-            const exists = existingItems.find(item => item.text.toLowerCase() === text.toLowerCase());
-
-            if (exists) {
-                if (exists.inStock && currentShoppingTab === 'buy') {
-                    // Si está en stock pero lo añadimos a compra, lo marcamos como "para comprar"
-                    await updateShoppingItem(exists.id, { inStock: false, done: false });
-                    showToast(`🛍️ "${text}" movido de Bazar a Compra`);
-                } else {
-                    showToast(`⚠️ "${text}" ya está anotado`);
-                }
-                input.value = '';
-                shoppingSearchQuery = '';
-                renderShoppingItems();
-                return;
-            }
-
             const masterData = getMasterSupplyData();
-            let category = "Otros";
+            const lowerText = text.toLowerCase();
+            let category = 'Otros';
+            let finalText = text;
+
+            // Priorizar coincidencia exacta con el maestro
             for (const cat in masterData) {
-                if (masterData[cat].some(s => text.toLowerCase().includes(s.toLowerCase()))) {
+                const match = masterData[cat].find(t => t.toLowerCase() === lowerText);
+                if (match) {
                     category = cat;
+                    finalText = match; // Usar capitalización original del maestro
                     break;
                 }
             }
 
-            const newItem = {
-                text,
-                done: false,
-                inStock: currentShoppingTab === 'stock',
-                quantity: 1,
-                userId: getCurrentUserId(),
-                category,
-                timestamp: Date.now()
-            };
+            const allItems = await getShoppingItemsFromDB();
+            const existing = allItems.find(item => item.text.toLowerCase() === lowerText);
 
-            await saveNewShoppingItem(newItem);
+            if (existing) {
+                // Si ya existe, simplemente lo movemos a la lista de compra (inStock=false) y desmarcamos
+                await updateShoppingItem(existing.id || existing.timestamp, {
+                    inStock: false,
+                    done: false,
+                    category: category // Asegurar categoría correcta
+                });
+                showToast(`♻️ ${finalText} actualizado en la lista`);
+            } else {
+                const newItem = {
+                    id: 'shop_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                    text: finalText,
+                    done: false,
+                    inStock: false,
+                    category: category,
+                    quantity: 1,
+                    userId: getCurrentUserId(),
+                    timestamp: Date.now()
+                };
+                await saveNewShoppingItem(newItem);
+                showToast(`✙ ${finalText} añadido`);
+            }
+
             input.value = '';
-            shoppingSearchQuery = ''; // Limpiar búsqueda al añadir
+            shoppingSearchQuery = '';
             const hint = document.getElementById('shoppingSearchHint');
             if (hint) hint.style.display = 'none';
 
             renderShoppingItems();
-            showToast('🛒 Víveres anotados');
         }
+
 
         async function saveNewShoppingItem(item) {
             if (isFirebaseConfigured && db) {
-                await db.collection('shopping_list').add(item);
+                try {
+                    await db.collection('shopping_list').add(item);
+                } catch (e) {
+                    console.error('Error saving to Firebase:', e);
+                    saveToLocal(item);
+                }
             } else {
-                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                items.push(item);
-                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+                saveToLocal(item);
             }
+        }
+
+        function saveToLocal(item) {
+            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+            items.push(item);
+            localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
         }
 
         async function updateShoppingItem(id, data) {
@@ -8246,7 +8424,6 @@
                 await db.collection('shopping_list').doc(id).update(data);
             } else {
                 const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                // Buscar por ID o por timestamp (como fallback de ID)
                 const idx = items.findIndex(it => (it.id === id) || (it.timestamp == id));
                 if (idx !== -1) {
                     items[idx] = { ...items[idx], ...data };
@@ -8264,103 +8441,215 @@
             } else {
                 items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
             }
-            // Asegurarnos de que todos tengan una propiedad ID o timestamp para el manejo
             return items.map(it => ({ ...it, id: it.id || it.timestamp || Date.now() }));
         }
 
         async function renderShoppingItems() {
-            const container = document.getElementById('shoppingListItems');
-            if (!container) return;
-            let fullItems = await getShoppingItemsFromDB();
-            container.innerHTML = '';
+            const listContainer = document.getElementById('shoppingListItems');
+            if (!listContainer) return;
 
-            // Filtrar por Pestaña y Búsqueda
-            let filtered = fullItems.filter(item => {
-                const matchesTab = (currentShoppingTab === 'buy') ? !item.inStock : item.inStock;
-                const matchesSearch = item.text.toLowerCase().includes(shoppingSearchQuery);
-                return matchesTab && matchesSearch;
+            const searchQuery = (shoppingSearchQuery || '').toLowerCase().trim();
+            let allItems = await getShoppingItemsFromDB();
+            const masterData = getMasterSupplyData();
+
+            // 1. DEDUPLICACIÓN Y NORMALIZACIÓN PROACTIVA
+            const uniqueItemsMap = new Map();
+            allItems.forEach(item => {
+                const text = (item.text || '').trim();
+                const lowerText = text.toLowerCase();
+
+                let correctCategory = item.category;
+                if (!item.category || item.category === 'Otros') {
+                    for (const cat in masterData) {
+                        if (masterData[cat].some(t => t.toLowerCase() === lowerText)) {
+                            correctCategory = cat;
+                            break;
+                        }
+                    }
+                }
+
+                if (!uniqueItemsMap.has(lowerText)) {
+                    uniqueItemsMap.set(lowerText, { ...item, category: correctCategory });
+
+                    // Si la categoría fue corregida de "Otros" a algo real, actualizamos en DB sin re-renderizar
+                    if (item.category !== correctCategory && item.id) {
+                        const itemId = item.id || item.timestamp;
+                        if (isFirebaseConfigured && db && typeof itemId === 'string' && itemId.length > 5) {
+                            db.collection('shopping_list').doc(itemId).update({ category: correctCategory }).catch(() => { });
+                        } else {
+                            const localItems = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+                            const idx = localItems.findIndex(it => (it.id === itemId) || (it.timestamp == itemId));
+                            if (idx !== -1) {
+                                localItems[idx].category = correctCategory;
+                                localStorage.setItem('medieval_shopping_list', JSON.stringify(localItems));
+                            }
+                        }
+                    }
+                } else {
+                    const existing = uniqueItemsMap.get(lowerText);
+                    if (existing.category === 'Otros' && correctCategory !== 'Otros') {
+                        existing.category = correctCategory;
+                        // También actualizamos el existente en DB si es posible
+                        const itemId = existing.id || existing.timestamp;
+                        if (itemId) {
+                            if (isFirebaseConfigured && db && typeof itemId === 'string' && itemId.length > 5) {
+                                db.collection('shopping_list').doc(itemId).update({ category: correctCategory }).catch(() => { });
+                            }
+                        }
+                    }
+                    if (item.done === false) existing.done = false;
+                    if (item.inStock) existing.inStock = true;
+                }
+
             });
 
-            if (filtered.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding: 40px 10px; color: var(--sepia); font-style: italic; opacity: 0.6;">
-                    ${shoppingSearchQuery ? 'No se hallaron tales víveres...' : (currentShoppingTab === 'buy' ? 'El pergamino está en blanco' : 'El bazar está vacío')}
+            allItems = Array.from(uniqueItemsMap.values());
+
+            const itemsForTab = currentShoppingTab === 'buy'
+                ? allItems.filter(item => !item.inStock)
+                : allItems.filter(item => item.inStock);
+
+            const filteredItems = searchQuery
+                ? itemsForTab.filter(item => item.text.toLowerCase().includes(searchQuery))
+                : itemsForTab;
+
+            listContainer.innerHTML = '';
+
+            const zoomVal = localStorage.getItem('shopping_zoom_size') || '14';
+            const slider = document.getElementById('shoppingZoomSlider');
+            if (slider) slider.value = zoomVal;
+            listContainer.style.fontSize = zoomVal + 'px';
+
+            if (filteredItems.length === 0) {
+                listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:#999; font-style:italic; font-size:12px;">
+                    ${searchQuery ? 'No se hallaron víveres con ese nombre' : 'El pergamino está vacío'}
                 </div>`;
                 return;
             }
 
-            // Separar Pendientes de Completados
-            const pendingItems = filtered.filter(it => !it.done);
-            const completedItems = filtered.filter(it => it.done);
+            const pendingItems = filteredItems.filter(item => !item.done);
+            const doneItems = filteredItems.filter(item => item.done);
 
-            const fontSize = localStorage.getItem('shopping_zoom_size') || '14';
+            if (pendingItems.length > 0) {
+                renderGroup(pendingItems, '📥 Por Conseguir', false);
+            }
 
-            // Función ayudante para renderizar un grupo de ítems (pendientes o completados)
-            const renderGroup = (items, label, extraClass = '') => {
-                if (items.length === 0) return;
-
-                // Separador de Sección
+            if (doneItems.length > 0) {
                 const divider = document.createElement('div');
-                divider.className = `shopping-section-divider ${extraClass}`;
-                divider.innerHTML = label;
-                container.appendChild(divider);
+                divider.className = 'shopping-section-divider completed';
+                divider.innerHTML = '<span>✓ Ya en el Carro / Stock</span>';
+                listContainer.appendChild(divider);
+                renderGroup(doneItems, '📦 Completado', true);
+            }
 
-                // Agrupar por Categoría dentro del grupo
-                const categories = {};
+            function renderGroup(items, groupTitle, isDone) {
+                const groups = {};
                 items.forEach(item => {
-                    const cat = item.category || "Otros";
-                    if (!categories[cat]) categories[cat] = [];
-                    categories[cat].push(item);
+                    const cat = item.category || 'Otros';
+                    if (!groups[cat]) groups[cat] = [];
+                    groups[cat].push(item);
                 });
 
-                const catNames = Object.keys(categories).sort();
-                catNames.forEach(cat => {
-                    const catItems = categories[cat].sort((a, b) => a.text.localeCompare(b.text));
+                const sortedCats = Object.keys(groups).sort((a, b) => {
+                    if (a === 'Otros') return 1;
+                    if (b === 'Otros') return -1;
+                    return a.localeCompare(b);
+                });
 
-                    // Cabecera Categoría
-                    const header = document.createElement('div');
-                    header.className = 'shopping-category-header';
-                    header.innerHTML = `<span>${getCategoryIcon(cat)} ${cat}</span> <span style="font-size: 9px; opacity: 0.5;">${catItems.length}</span>`;
-                    container.appendChild(header);
+                sortedCats.forEach(cat => {
+                    const section = document.createElement('div');
+                    section.className = 'shopping-category-section';
 
-                    catItems.forEach(item => {
-                        const itemDiv = document.createElement('div');
-                        const catClass = cat.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                        itemDiv.className = `shopping-item-container cat-${catClass}`;
+                    if (isDone) {
+                        const header = document.createElement('div');
+                        header.className = 'shopping-category-header';
+                        header.textContent = cat;
+                        section.appendChild(header);
+                    }
 
-                        itemDiv.innerHTML = `
-                            <div class="shopping-item-swipe-bg"><span>ELIMINAR 🗑️</span></div>
-                            <div class="shopping-item-content ${item.done ? 'item-done' : ''}" 
-                                 onclick="toggleShoppingItem('${item.id}')"
-                                 style="display: flex; align-items: center; padding: 6px 8px; gap: 10px; cursor: pointer; font-size: ${fontSize}px;">
-                                
-                                <div class="shopping-checkbox" style="width: 18px; height: 18px; border: 1.5px solid var(--accent-red); border-radius: 3px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: ${item.done ? 'var(--accent-red)' : 'transparent'}; color: white; font-size: 12px;">
-                                    ${item.done ? '✓' : ''}
-                                </div>
+                    groups[cat].forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = `shopping-item ${item.done ? 'item-done' : ''}`;
 
-                                <div class="shopping-item-text ink-strikethrough" style="flex: 1; color: var(--text-dark); font-weight: 500;">
-                                    ${item.text}
-                                </div>
+                        const itemId = item.id || item.timestamp;
+                        div.onclick = () => toggleShoppingItem(itemId);
 
-                                <div style="display: flex; align-items: center; gap: 4px;" onclick="event.stopPropagation()">
-                                    <span class="quantity-badge" onclick="cycleQuantity(event, '${item.id}', ${item.quantity || 1})" style="cursor: pointer; font-size: 11px; font-weight: bold; min-width: 24px; text-align: center;">
-                                        ${item.quantity || 1}
-                                    </span>
-                                    ${currentShoppingTab === 'stock' ? `
-                                        <button class="header-btn" onclick="addToBuyFromStock('${item.id}')" title="Añadir a la compra" style="font-size: 12px; padding: 2px 4px;">🛒+</button>
-                                    ` : ''}
-                                    <button class="header-btn" onclick="startInlineEdit(this.parentElement.parentElement, '${item.id}')" title="Editar" style="font-size: 10px; padding: 2px 4px;">✏️</button>
-                                </div>
-                            </div>
-                        `;
-                        container.appendChild(itemDiv);
-                        setupSwipeToDelete(itemDiv, item.id);
+                        // Eliminado el swipe-bg-delete ya que ahora el botón es explícito
+                        const content = document.createElement('div');
+                        content.className = 'shopping-item-content';
+
+                        const check = document.createElement('div');
+                        check.className = 'shopping-item-check';
+                        check.innerHTML = item.done ? '✓' : '';
+                        content.appendChild(check);
+
+                        const textSpan = document.createElement('span');
+                        textSpan.className = 'shopping-item-text';
+                        textSpan.textContent = item.text;
+                        content.appendChild(textSpan);
+
+                        const actions = document.createElement('div');
+                        actions.className = 'shopping-item-actions';
+                        actions.onclick = (e) => e.stopPropagation();
+
+                        if (!item.done) {
+                            const qtyControl = document.createElement('div');
+                            qtyControl.className = 'qty-control';
+
+                            const btnMinus = document.createElement('button');
+                            btnMinus.className = 'qty-btn';
+                            btnMinus.innerHTML = '-';
+                            btnMinus.onclick = () => adjustQuantity(itemId, -1);
+
+                            const valSpan = document.createElement('span');
+                            valSpan.className = 'qty-val';
+                            valSpan.textContent = item.quantity || 1;
+
+                            const btnPlus = document.createElement('button');
+                            btnPlus.className = 'qty-btn';
+                            btnPlus.innerHTML = '+';
+                            btnPlus.onclick = () => adjustQuantity(itemId, 1);
+
+                            qtyControl.appendChild(btnMinus);
+                            qtyControl.appendChild(valSpan);
+                            qtyControl.appendChild(btnPlus);
+                            actions.appendChild(qtyControl);
+                        }
+
+                        if (currentShoppingTab === 'stock') {
+                            const buyBtn = document.createElement('button');
+                            buyBtn.className = 'shopping-action-btn';
+                            buyBtn.innerHTML = '🛒';
+                            buyBtn.title = 'Mover a lista de compra';
+                            buyBtn.onclick = () => addToBuyFromStock(itemId);
+                            actions.appendChild(buyBtn);
+                        }
+
+                        const editBtn = document.createElement('button');
+                        editBtn.className = 'shopping-action-btn';
+                        editBtn.innerHTML = '✒️';
+                        editBtn.title = 'Editar';
+                        editBtn.onclick = () => startInlineEdit(div, itemId);
+                        actions.appendChild(editBtn);
+
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'shopping-action-btn';
+                        delBtn.innerHTML = '🗑️';
+                        delBtn.title = 'Eliminar';
+                        delBtn.onclick = () => removeShoppingItem(itemId);
+                        actions.appendChild(delBtn);
+
+                        content.appendChild(actions);
+                        div.appendChild(content);
+                        section.appendChild(div);
+
+                        // Desactivamos el swipe por defecto para evitar conflictos con los botones
+                        // setupSwipeToDelete(div, () => removeShoppingItem(itemId));
                     });
-                });
-            };
 
-            // Renderizar los dos bloques
-            renderGroup(pendingItems, currentShoppingTab === 'buy' ? '🛒 Por comprar' : '📦 Pendiente revisar');
-            renderGroup(completedItems, currentShoppingTab === 'buy' ? '✅ Ya en el cesto' : '📦 En stock', 'completed');
+                    listContainer.appendChild(section);
+                });
+            }
         }
 
         function getCategoryIcon(cat) {
@@ -8377,7 +8666,7 @@
 
         async function toggleShoppingItem(id) {
             const items = await getShoppingItemsFromDB();
-            const item = items.find(it => it.id == id);
+            const item = items.find(it => (it.id || it.timestamp) == id);
             if (!item) return;
             const newDone = !item.done;
 
@@ -8385,16 +8674,17 @@
 
             if (newDone && currentShoppingTab === 'buy') {
                 showToast('✅ Añadido al saco');
-                // Al marcar como hecho, si es algo de stock, podríamos preguntar si queremos devolverlo a bazar
-                // Pero por ahora solo lo tachamos.
             }
         }
 
-        async function cycleQuantity(event, id, current) {
-            event.stopPropagation();
-            const next = current >= 5 ? 1 : current + 1;
-            await updateShoppingItem(id, { quantity: next });
+        async function adjustQuantity(id, delta) {
+            const all = await getShoppingItemsFromDB();
+            const item = all.find(i => (i.id || i.timestamp) == id);
+            if (!item) return;
+            const newQty = Math.max(1, (item.quantity || 1) + delta);
+            await updateShoppingItem(id, { quantity: newQty });
         }
+
 
         async function addToBuyFromStock(id) {
             await updateShoppingItem(id, { inStock: false, done: false });
@@ -8647,8 +8937,8 @@
             document.getElementById('messageModalTitle').textContent = title;
             document.getElementById('messageModalBody').innerHTML = text.replace(/\n/g, '<br>');
             document.getElementById('messageModalActions').innerHTML = `
-                            < button class="btn btn-accept" style = "width: 100%;" onclick = "closeMessageModal()" > ENTENDIDO</button >
-                                `;
+                                < button class="btn btn-accept" style = "width: 100%;" onclick = "closeMessageModal()" > ENTENDIDO</button >
+                                    `;
             document.getElementById('messageModal').classList.add('show');
         }
 
@@ -8656,11 +8946,11 @@
             document.getElementById('messageModalTitle').textContent = title;
             document.getElementById('messageModalBody').innerHTML = text.replace(/\n/g, '<br>');
             document.getElementById('messageModalActions').innerHTML = `
-                                < div style = "display:flex; gap:10px; width:100%;" >
+                                    < div style = "display:flex; gap:10px; width:100%;" >
                     <button class="btn btn-cancel" style="flex:1;" onclick="closeMessageModal()">CANCELAR</button>
                     <button class="btn btn-accept" style="flex:1;" id="confirmOkBtn">ACEPTAR</button>
                 </div >
-                `;
+                                `;
             document.getElementById('confirmOkBtn').onclick = () => {
                 onConfirm();
                 closeMessageModal();
@@ -8719,36 +9009,42 @@
                 "Baño e higiene personal": [
                     "Papel higiénico", "Gel de baño", "Champú", "Desodorante",
                     "Cepillos de dientes",
-                    "Toallitas", "Pañuelos de papel"
+                    "Toallitas", "Pañuelos de papel", "Vagirux"
                 ]
             };
         }
 
         async function autoLoadSuppliesAsChecked() {
-            // Solo ejecutar si el usuario está en la página y Firebase está listo
             const masterData = getMasterSupplyData();
             const existingItems = await getShoppingItemsFromDB();
             const userId = getCurrentUserId();
             let addedCount = 0;
+            let updatedCount = 0;
 
             for (const category in masterData) {
                 for (const text of masterData[category]) {
-                    // Verificar si ya existe el producto (evitar duplicados)
-                    if (!existingItems.find(item => item.text.toLowerCase() === text.toLowerCase())) {
+                    const lowerText = text.toLowerCase();
+                    const existing = existingItems.find(item => item.text.toLowerCase() === lowerText);
+
+                    if (!existing) {
                         const newItem = {
                             text,
-                            done: true, // "Con un check" -> Ya marcado
+                            done: true,
                             userId,
                             category,
                             timestamp: Date.now()
                         };
-
                         if (isFirebaseConfigured && db) {
                             await db.collection('shopping_list').add(newItem);
                         } else {
                             existingItems.push(newItem);
                         }
                         addedCount++;
+                    } else if (existing.category !== category) {
+                        // Actualizar categoría si es distinta (p.ej. estaba en Otros)
+                        existing.category = category;
+                        await updateShoppingItem(existing.id || existing.timestamp, { category });
+                        updatedCount++;
                     }
                 }
             }
@@ -8757,9 +9053,9 @@
                 localStorage.setItem('medieval_shopping_list', JSON.stringify(existingItems));
             }
 
-            if (addedCount > 0) {
+            if (addedCount > 0 || updatedCount > 0) {
                 renderShoppingItems();
-                showToast(`✅ ${addedCount} productos añadidos al archivo maestro`);
+                if (addedCount > 0) showToast(`✅ ${addedCount} productos nuevos añadidos`);
             }
         }
 
