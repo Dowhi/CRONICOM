@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 
     <!-- Google Fonts: Tipografía Medieval -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3122,6 +3123,10 @@
                 <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
                     <button class="btn btn-accept" style="flex:1; min-width:140px;" onclick="openReminders()">🔔
                         Recordatorios</button>
+                    <button class="btn btn-accept"
+                        style="flex:1; min-width:140px; background: var(--bg-secondary-gradient);"
+                        onclick="requestNotificationPermission()">📢
+                        Notificaciones</button>
                 </div>
                 <div class="modal-actions" style="margin-top:12px;">
                     <button class="btn btn-cancel" onclick="closeSettingsModal()">Cerrar</button>
@@ -3605,6 +3610,7 @@
 
         // Inicializar Firebase (solo si está configurado)
         let db = null;
+        let messaging = null;
         let isFirebaseConfigured = false;
         let isFirebaseConnected = false;
         let useLocalStorage = false;
@@ -3617,6 +3623,9 @@
                     firebase.initializeApp(firebaseConfig);
                 }
                 db = firebase.firestore();
+                if (firebase.messaging.isSupported()) {
+                    messaging = firebase.messaging();
+                }
 
                 // Habilitar persistencia offline (Compat v10)
                 db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
@@ -7368,6 +7377,142 @@
 
         let currentEditingNoteId = null; // Variable global para rastrear qué nota estamos editando
 
+        // --- SISTEMA DE ALERTAS Y NOTIFICACIONES ---
+        let alertsFired = new Set();
+        let lastAlertDate = "";
+
+        async function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                showToast("⚠️ Tu navegador no soporta notificaciones");
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                showToast("✅ ¡Notificaciones activadas, Escriba!");
+
+                // --- Registro para Notificaciones Push (Modo App Cerrada) ---
+                if (messaging) {
+                    try {
+                        const token = await messaging.getToken({
+                            vapidKey: "BJJSfY2WiDFZmo_xgkxl_w1S2O9SLoOtASB33fluYE0JfcdSBe7nGbI0lqVUfgy7VKjMag7tP5RXps3x6sxBvow"
+                        });
+                        if (token) {
+                            console.log("Token de mensajería obtenido:", token);
+                            // Guardar token en Firestore para este usuario
+                            const userId = getCurrentUserId();
+                            await db.collection('user_tokens').doc(token).set({
+                                userId: userId,
+                                device: navigator.userAgent,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+                    } catch (err) {
+                        console.error("Error obteniendo token FCM:", err);
+                    }
+                }
+
+                // Probar notificación
+                new Notification("Chronicon", {
+                    body: "Las crónicas ahora os avisarán incluso en el más allá.",
+                    icon: "favicon.png"
+                });
+            } else {
+                showToast("❌ Notificaciones denegadas por el usuario");
+            }
+        }
+
+        async function checkAlarms() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const events = await getEventsForDate(now);
+            const currentMin = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            events.forEach(e => {
+                if (e.isAlarm && e.time === currentMin) {
+                    const alarmKey = `alarm_${dateStr}_${e.time}_${e.text}`;
+                    if (!localStorage.getItem(alarmKey)) {
+                        sendBrowserNotification(`${e.time} - ${e.text}`);
+                        localStorage.setItem(alarmKey, 'fired');
+                    }
+                }
+            });
+
+            // --- TRUCO LOCAL: PROGRAMAR PRÓXIMAS 24H ---
+            // Revisamos los eventos de hoy y mañana para "confiárselos" al móvil por si cerramos la app
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                [now, tomorrow].forEach(async (date) => {
+                    const dStr = date.toISOString().split('T')[0];
+                    const dEvents = await getEventsForDate(date);
+                    dEvents.forEach(e => {
+                        if (e.isAlarm && e.time) {
+                            const [h, m] = e.time.split(':');
+                            const alarmTime = new Date(date);
+                            alarmTime.setHours(h, m, 0, 0);
+
+                            if (alarmTime > now) {
+                                // Enviamos al Service Worker para que lo "agende" localmente
+                                navigator.serviceWorker.controller.postMessage({
+                                    type: 'SCHEDULE_NOTIFICATION',
+                                    title: "📜 Cita Pendiente",
+                                    body: `${e.time} - ${stripHTML(e.text)}`,
+                                    timestamp: alarmTime.getTime(),
+                                    tag: `local_${dStr}_${e.time}`
+                                });
+                            }
+                        }
+                    });
+                });
+            }
+        }
+
+        function sendBrowserNotification(message) {
+            if (Notification.permission === "granted") {
+                const cleanText = stripHTML(message);
+
+                // Generar sonido siempre que la pestaña esté activa
+                playMedievalChime();
+
+                new Notification("📜 Crónica del Reino", {
+                    body: cleanText,
+                    icon: "favicon.png",
+                    badge: "favicon.png",
+                    tag: "chronicon-alert"
+                });
+            }
+        }
+
+        function playMedievalChime() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'triangle'; // Sonido más suave, tipo campana
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // La natural
+                osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 1.5);
+
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.5);
+            } catch (e) {
+                console.warn("No se pudo emitir sonido de alerta:", e);
+            }
+        }
+
+        function stripHTML(html) {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            return doc.body.textContent || "";
+        }
+
         async function saveDayNote() {
             if (!selectedDate) return;
             const editor = document.getElementById('medievalEditor');
@@ -9085,6 +9230,11 @@
             // Inicializar extras
             displayMedievalQuote();
             autoLoadSuppliesAsChecked();
+
+            // Iniciar vigía de alarmas cada minuto
+            setInterval(checkAlarms, 60000);
+            // Primera revisión inmediata
+            checkAlarms();
         }
 
 
