@@ -3021,14 +3021,24 @@
                                 </select>
                             </div>
                             <div class="medieval-section"
-                                style="padding: 6px 8px; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border-color: var(--cinnabar); min-height: 65px;">
-                                <span
-                                    style="font-family: Cinzel; font-size: 10px; color: var(--cinnabar); margin-bottom: 2px;">AVISO</span>
-                                <label class="switch-medieval"
-                                    style="cursor: pointer; display: flex; align-items: center; justify-content: center; height: 35px; width: 100%;">
-                                    <input type="checkbox" id="editorAlarm" style="display: none;">
-                                    <span id="alarmIcon" style="font-size: 1.8em; opacity: 0.3;">🔔</span>
-                                </label>
+                                style="padding: 6px 8px; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border-color: var(--cinnabar); min-height: 65px;">
+                                <span style="font-family: Cinzel; font-size: 10px; color: var(--cinnabar);">AVISO</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <label class="switch-medieval"
+                                        style="cursor: pointer; display: flex; align-items: center; justify-content: center; height: 35px;">
+                                        <input type="checkbox" id="editorAlarm" style="display: none;">
+                                        <span id="alarmIcon" style="font-size: 1.8em; opacity: 0.3;">🔔</span>
+                                    </label>
+                                    <select id="editorAdvance" class="notes-select"
+                                        style="height: 25px; padding: 0 4px; font-size: 10px; border-color: rgba(139,38,53,0.3); border-radius: 4px; width: auto;">
+                                        <option value="0">Al momento</option>
+                                        <option value="5">5 min antes</option>
+                                        <option value="10">10 min antes</option>
+                                        <option value="15">15 min antes</option>
+                                        <option value="30">30 min antes</option>
+                                        <option value="60">1h antes</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -7256,6 +7266,12 @@
                 updateAlarmIcon(note.isAlarm);
             }
 
+            // Nueva preferencia de antelación por evento
+            const advanceSelect = document.getElementById('editorAdvance');
+            if (advanceSelect) {
+                advanceSelect.value = note.advanceMinutes || '0';
+            }
+
             document.getElementById('cellSizeSlider').value = note.fontSize || 11;
             document.getElementById('cellSizeValue').textContent = note.fontSize || 11;
             document.getElementById('medievalEditor').style.fontSize = (note.fontSize || 11) + 'px';
@@ -7275,6 +7291,10 @@
             if (alarmCheck) {
                 alarmCheck.checked = false;
                 updateAlarmIcon(false);
+            }
+            const advanceSelect = document.getElementById('editorAdvance');
+            if (advanceSelect) {
+                advanceSelect.value = '0';
             }
             document.getElementById('cellSizeSlider').value = 11;
             document.getElementById('cellSizeValue').textContent = 11;
@@ -7405,9 +7425,11 @@
                             console.log("Token de mensajería obtenido:", token);
                             // Guardar token en Firestore para este usuario
                             const userId = getCurrentUserId();
+                            const advanceMins = parseInt(localStorage.getItem('advance_minutes') || '0');
                             await db.collection('user_tokens').doc(token).set({
                                 userId: userId,
                                 device: navigator.userAgent,
+                                advanceMinutes: advanceMins,
                                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
                         }
@@ -7428,43 +7450,51 @@
 
         async function checkAlarms() {
             const now = new Date();
-            const dateStr = now.toISOString().split('T')[0];
-            const events = await getEventsForDate(now);
-            const currentMin = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const todayStr = now.toISOString().split('T')[0];
+            const tomorrow = new Date(now.getTime() + 86400000);
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-            events.forEach(e => {
-                if (e.isAlarm && e.time === currentMin) {
-                    const alarmKey = `alarm_${dateStr}_${e.time}_${e.text}`;
-                    if (!localStorage.getItem(alarmKey)) {
-                        sendBrowserNotification(`${e.time} - ${e.text}`);
-                        localStorage.setItem(alarmKey, 'fired');
+            // Revisamos posibles antelaciones: 0, 5, 10, 15, 30, 60
+            const margins = [0, 5, 10, 15, 30, 60];
+
+            for (const am of margins) {
+                const watchTime = new Date(now.getTime() + am * 60000);
+                const dateStr = watchTime.toISOString().split('T')[0];
+                const events = await getEventsForDate(watchTime);
+                const watchMin = `${String(watchTime.getHours()).padStart(2, '0')}:${String(watchTime.getMinutes()).padStart(2, '0')}`;
+
+                events.forEach(e => {
+                    // Solo si la antelación configurada en el evento coincide con la que estamos probando
+                    if (e.isAlarm && e.time === watchMin && (e.advanceMinutes || 0) === am) {
+                        const alarmKey = `alarm_${dateStr}_${e.time}_${am}_${e.text}`;
+                        if (!localStorage.getItem(alarmKey)) {
+                            const prefix = am > 0 ? `🔔 [En ${am} min] ` : "";
+                            sendBrowserNotification(`${prefix} ${e.time} - ${e.text}`);
+                            localStorage.setItem(alarmKey, 'fired');
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // --- TRUCO LOCAL: PROGRAMAR PRÓXIMAS 24H ---
-            // Revisamos los eventos de hoy y mañana para "confiárselos" al móvil por si cerramos la app
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                const tomorrow = new Date(now);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-
                 [now, tomorrow].forEach(async (date) => {
-                    const dStr = date.toISOString().split('T')[0];
                     const dEvents = await getEventsForDate(date);
                     dEvents.forEach(e => {
                         if (e.isAlarm && e.time) {
+                            const am = e.advanceMinutes || 0;
                             const [h, m] = e.time.split(':');
                             const alarmTime = new Date(date);
-                            alarmTime.setHours(h, m, 0, 0);
+                            alarmTime.setHours(parseInt(h), parseInt(m), 0, 0);
 
-                            if (alarmTime > now) {
-                                // Enviamos al Service Worker para que lo "agende" localmente
+                            const fireTime = alarmTime.getTime() - (am * 60000);
+                            if (fireTime > now.getTime()) {
                                 navigator.serviceWorker.controller.postMessage({
                                     type: 'SCHEDULE_NOTIFICATION',
-                                    title: "📜 Cita Pendiente",
-                                    body: `${e.time} - ${stripHTML(e.text)}`,
-                                    timestamp: alarmTime.getTime(),
-                                    tag: `local_${dStr}_${e.time}`
+                                    title: am > 0 ? `🔔 [En ${am} min] ${e.time}` : `${e.time}`,
+                                    body: e.text,
+                                    timestamp: fireTime,
+                                    tag: `alarm_${date.toISOString().split('T')[0]}_${e.time}_${am}`
                                 });
                             }
                         }
@@ -7527,9 +7557,12 @@
             }
             const time = document.getElementById('editorTime').value;
             const category = document.getElementById('editorCategory').value;
-            const isAlarm = document.getElementById('editorAlarm').checked;
-            const fontSize = parseInt(document.getElementById('cellSizeSlider').value);
-            const fontFamily = document.getElementById('editorFontFamily').value;
+            const alarmCheck = document.getElementById('editorAlarm');
+            const advanceSelect = document.getElementById('editorAdvance');
+            const isAlarm = alarmCheck ? alarmCheck.checked : false;
+            const advanceMinutes = advanceSelect ? parseInt(advanceSelect.value) : 0;
+            const fontSize = parseInt(document.getElementById('cellSizeSlider').value) || 11;
+            const fontFamily = document.getElementById('editorFontFamily').value || "'Almendra', serif";
 
             const sharedWith = [];
             document.querySelectorAll('#visibilityList input:checked').forEach(cb => {
@@ -7541,6 +7574,7 @@
             pushUndoSnapshot(selectedDate, events);
 
             const myId = getCurrentUserId();
+            const now = new Date().toISOString();
 
             // Si tenemos un ID estamos editando una nota específica, si no, es nueva
             let noteIdx = -1;
@@ -7563,11 +7597,12 @@
                 time: time,
                 category: category,
                 isAlarm: isAlarm,
+                advanceMinutes: advanceMinutes, // Added advanceMinutes
                 fontSize: fontSize,
                 fontFamily: fontFamily,
                 sharedWith: sharedWith,
                 authorId: myId || null,
-                updatedAt: new Date().toISOString()
+                updatedAt: now
             };
 
             if (noteIdx !== -1) {
