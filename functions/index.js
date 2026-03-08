@@ -77,7 +77,29 @@ exports.chroniconWatchman = functions.pubsub.schedule('every 1 minutes').onRun(a
             title: "📜 Crónica del Reino",
             body: alarmsToSend.join(' | '),
         },
-        tokens: tokens, // Usamos enviar a múltiples tokens
+        android: {
+            priority: "high",
+            notification: {
+                channelId: "chronicon_alerts",
+                priority: "high",
+                visibility: "public",
+                sound: "default"
+            }
+        },
+        apns: {
+            payload: {
+                aps: {
+                    alert: {
+                        title: "📜 Crónica del Reino",
+                        body: alarmsToSend.join(' | '),
+                    },
+                    sound: "default",
+                    badge: 1,
+                    contentAvailable: true
+                }
+            }
+        },
+        tokens: tokens,
     };
 
     try {
