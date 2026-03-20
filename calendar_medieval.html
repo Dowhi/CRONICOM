@@ -2435,6 +2435,15 @@
         .rain-alert {
             animation: blink 1s infinite;
         }
+
+        /* Funcionalidad de ocultar fines de semana */
+        .calendar-grid.hide-weekends {
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        }
+
+        .calendar-grid.hide-weekends .day-weekend {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -2449,6 +2458,7 @@
             <div class="header-title">📜 Chronicon</div>
         </div>
         <div class="header-actions">
+            <button class="header-btn" onclick="toggleWeekends()" title="Alternar Fines de Semana" id="toggleWeekendsBtn">👔</button>
             <button class="header-btn" onclick="openWeeklyView(); setWeeklyViewMode('agenda');"
                 title="Agenda Semanal">📅</button>
             <button class="header-btn" onclick="toggleZenMode()" title="Activar Modo Zen">✨</button>
@@ -3605,6 +3615,32 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
+        // --- ESTADO GLOBAL ---
+        let hideWeekends = localStorage.getItem('hide_weekends') === 'true';
+
+        function toggleWeekends() {
+            hideWeekends = !hideWeekends;
+            localStorage.setItem('hide_weekends', hideWeekends);
+            
+            // Actualizar icono del botón
+            const btn = document.getElementById('toggleWeekendsBtn');
+            if (btn) {
+                btn.textContent = hideWeekends ? '🏠' : '👔';
+                btn.title = hideWeekends ? 'Mostrar Fines de Semana' : 'Ocultar Fines de Semana';
+            }
+            
+            renderCalendar();
+        }
+
+        // --- INICIALIZACIÓN ---
+        window.addEventListener('load', () => {
+            const btn = document.getElementById('toggleWeekendsBtn');
+            if (btn) {
+                btn.textContent = hideWeekends ? '🏠' : '👔';
+                btn.title = hideWeekends ? 'Mostrar Fines de Semana' : 'Ocultar Fines de Semana';
+            }
+        });
+
         // ============================================
         // CONFIGURACIÓN DE FIREBASE
         // ============================================
@@ -5007,15 +5043,24 @@
 
             // 2. Limpiar e iniciar construcción
             grid.innerHTML = '';
+            
+            if (hideWeekends) {
+                grid.classList.add('hide-weekends');
+            } else {
+                grid.classList.remove('hide-weekends');
+            }
 
             const displayWeekDays = [];
             for (let i = 0; i < 7; i++) {
-                displayWeekDays.push(daysSource[(weekStart + i) % 7]);
+                const dayIdx = (weekStart + i) % 7;
+                displayWeekDays.push({ name: daysSource[dayIdx], index: dayIdx });
             }
-            displayWeekDays.forEach(day => {
+            
+            displayWeekDays.forEach(dayObj => {
                 const header = document.createElement('div');
                 header.className = 'weekday-header';
-                header.textContent = day;
+                if (dayObj.index === 0 || dayObj.index === 6) header.classList.add('day-weekend');
+                header.textContent = dayObj.name;
                 grid.appendChild(header);
             });
 
@@ -5025,6 +5070,8 @@
             for (let i = adjustedStart - 1; i >= 0; i--) {
                 const day = document.createElement('div');
                 day.className = 'calendar-day other-month';
+                const dDate = new Date(year, month - 1, prevMonthDays - i);
+                if (dDate.getDay() === 0 || dDate.getDay() === 6) day.classList.add('day-weekend');
                 day.textContent = prevMonthDays - i;
                 grid.appendChild(day);
             }
@@ -5038,6 +5085,7 @@
                 const date = new Date(year, month, d);
                 const day = document.createElement('div');
                 day.className = 'calendar-day';
+                if (date.getDay() === 0 || date.getDay() === 6) day.classList.add('day-weekend');
                 if (date.toDateString() === today.toDateString()) {
                     const ht = localStorage.getItem('highlight_today') || 'false';
                     if (ht === 'true') day.classList.add('today');
@@ -5212,6 +5260,8 @@
             for (let i = 1; i <= remaining; i++) {
                 const day = document.createElement('div');
                 day.className = 'calendar-day other-month';
+                const dDate = new Date(year, month + 1, i);
+                if (dDate.getDay() === 0 || dDate.getDay() === 6) day.classList.add('day-weekend');
                 day.textContent = i;
                 grid.appendChild(day);
             }
