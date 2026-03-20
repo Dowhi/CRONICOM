@@ -4398,7 +4398,7 @@
                     left.textContent = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
                     const right = document.createElement('div');
                     right.style.fontFamily = "'Almendra', serif";
-                    right.textContent = e.text || '';
+                    right.innerHTML = e.text || '';
                     row.appendChild(left);
                     row.appendChild(right);
                     list.appendChild(row);
