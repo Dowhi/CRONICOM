@@ -2587,6 +2587,7 @@
                     <option value="shifts">Ver: Turnos</option>
                     <option value="notes">Ver: Notas</option>
                     <option value="recurring">Ver: Recurrentes</option>
+                    <option value="external">Ver: Externos</option>
                 </select>
                 <select id="monthShiftFilter" class="notes-select"
                     style="min-width:140px; padding: 0 2px; font-size: 12px; height: 22px;">
@@ -3147,6 +3148,10 @@
                         style="flex:1; min-width:140px; background: var(--bg-secondary-gradient);"
                         onclick="requestNotificationPermission()">📢
                         Notificaciones</button>
+                    <button class="btn btn-accept" 
+                        style="flex:1; min-width:140px; background: #5d4037; color: #f4e4bc; border: 1px solid #3e2723;" 
+                        onclick="openExternalCalendars()">📆 
+                        Calendarios Externos</button>
                 </div>
                 <div class="modal-actions" style="margin-top:12px;">
                     <button class="btn btn-cancel" onclick="closeSettingsModal()">Cerrar</button>
@@ -3166,6 +3171,50 @@
                     <button class="btn btn-cancel"
                         onclick="document.getElementById('remindersModal').style.display='none'">Cerrar</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Calendarios Externos -->
+    <div class="modal" id="externalCalendarsModal">
+        <div class="modal-content" style="max-width: 600px; height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header">CALENDARIOS EXTERNOS</div>
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 15px;">
+                <div class="medieval-section" style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.05);">
+                    <div style="font-family: var(--font-header); color: var(--accent-red); margin-bottom: 10px;">✚ SUSCRIBIRSE A CALENDARIO (.ics)</div>
+                    <div class="notes-control-group">
+                        <label class="notes-label">Nombre del Calendario</label>
+                        <input type="text" id="extCalName" class="notes-input" placeholder="Ej: Festivos Sevilla">
+                    </div>
+                    <div class="notes-control-group" id="extCalUrlGroup">
+                        <label class="notes-label">URL del archivo iCal (.ics)</label>
+                        <input type="text" id="extCalUrl" class="notes-input" placeholder="https://ejemplo.com/calendario.ics">
+                    </div>
+                    <div class="notes-control-group" id="extCalTextGroup" style="display:none;">
+                        <label class="notes-label">Contenido del Calendario (iCal)</label>
+                        <textarea id="extCalRawText" class="notes-input" style="height:120px; font-family: monospace; font-size:10px;" placeholder="BEGIN:VCALENDAR..."></textarea>
+                    </div>
+                    <div style="display:flex; justify-content:center; gap:10px; margin-bottom:10px;">
+                        <button class="btn btn-accept" style="padding:4px 10px; font-size:11px;" onclick="toggleExtEntryMode('url')">Usar URL</button>
+                        <button class="btn btn-accept" style="padding:4px 10px; font-size:11px;" onclick="toggleExtEntryMode('text')">Pegar Texto</button>
+                    </div>
+                    <div class="notes-control-group">
+                        <label class="notes-label">Color distintivo</label>
+                        <input type="color" id="extCalColor" class="notes-input" style="height:40px; padding:2px;" value="#795548">
+                    </div>
+                    <button class="btn btn-accept" style="width: 100%; margin-top: 10px;" onclick="addExternalCalendar()">Inscribir en el Archivo Real</button>
+                    <div style="margin-top:10px; font-size:11px; color:#a67c52; font-style: italic;">
+                        Nota: La URL debe permitir acceso (CORS). Algunos servicios como Google Calendar funcionan mejor con el enlace 'Secreto' o público en formato iCal.
+                    </div>
+                </div>
+
+                <div style="font-family: var(--font-header); font-size: 1.2rem; border-bottom: 2px solid var(--sepia); margin-bottom: 15px; color: var(--cinnabar);">SUSCRIPCIONES ACTIVAS</div>
+                <div id="externalCalsList">
+                    <!-- Lista de calendarios -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" onclick="document.getElementById('externalCalendarsModal').classList.remove('show')">Cerrar</button>
             </div>
         </div>
     </div>
@@ -3237,6 +3286,17 @@
                             <option value="yearly">Anual</option>
                             <option value="custom">Personalizada</option>
                         </select>
+                    </div>
+
+                    <div class="notes-control-group" style="border: 1px dashed var(--accent-red); padding: 8px; border-radius: 6px; background: rgba(139, 38, 53, 0.03);">
+                        <label class="notes-label" style="color: var(--accent-red); margin-bottom: 5px;">📜 EXCEPTO (Fechas a omitir)</label>
+                        <div id="recExceptionsList" style="display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; min-height: 20px;">
+                            <!-- Aquí se mostrarán las fechas excluidas -->
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="date" id="recExceptionInput" class="notes-input" style="flex: 1; height: 32px;">
+                            <button type="button" class="btn btn-accept" onclick="addExceptionToUI()" style="height: 32px; padding: 0 12px; font-size: 11px;">Añadir</button>
+                        </div>
                     </div>
 
                     <div id="recCustomSettings"
@@ -5105,7 +5165,7 @@
 
                 // Mostrar turnos del día (máximo 3, con +N)
                 let shifts = events.filter(e => e.type === 'shift');
-                let notes = events.filter(e => e.type === 'note');
+                let notes = events.filter(e => e.type === 'note' || e.type === 'external');
                 if (monthFilters.shiftWanted) {
                     shifts = shifts.filter(e => (e.shiftId === monthFilters.shiftWanted) || ((e.text || '') === monthFilters.shiftWanted));
                 }
@@ -5113,28 +5173,54 @@
                     notes = notes.filter(n => (n.category || '') === monthFilters.notesCatWanted);
                 }
 
-                // Filtrar según modo de vista
+                // Filtrar según modo de vista (Reglas de exclusión)
                 if (monthFilters.viewMode === 'recurring') {
                     notes = notes.filter(n => n.isRecurring);
-                    shifts = []; // Ocultar turnos si buscamos solo recurrentes?
+                    shifts = []; 
                 } else if (monthFilters.viewMode === 'notes') {
-                    notes = notes.filter(n => !n.isRecurring);
+                    // Notas locales no recurrentes
+                    notes = notes.filter(n => n.type === 'note' && !n.isRecurring);
+                    shifts = []; 
+                } else if (monthFilters.viewMode === 'external') {
+                    // Solo eventos de calendarios externos
+                    notes = notes.filter(n => n.type === 'external');
+                    shifts = [];
+                } else if (monthFilters.viewMode === 'shifts') {
+                    // Solo turnos
+                    notes = [];
                 }
 
                 // Ordenar notas: Recurrentes al final
                 notes.sort((a, b) => (a.isRecurring === b.isRecurring ? 0 : a.isRecurring ? 1 : -1));
 
-                if (monthFilters.viewMode !== 'notes' && monthFilters.viewMode !== 'recurring' && shifts.length > 0) {
+                // Determinar color de fondo: Prioridad Calendario Externo > Un solo turno
+                let dayBg = '';
+                const externalEv = notes.find(n => n.type === 'external');
+                const isViewShifting = monthFilters.viewMode === 'all' || monthFilters.viewMode === 'shifts';
+                
+                if (externalEv && externalEv.backgroundColor) {
+                    dayBg = externalEv.backgroundColor;
+                } else if (isViewShifting && shifts.length === 1) {
+                    dayBg = shifts[0].backgroundColor || '#f4e4bc';
+                }
+
+                if (dayBg) {
+                    day.style.backgroundColor = dayBg;
+                    const contrast = getContrastColor(dayBg);
+                    dayNumber.style.color = contrast;
+                } else {
+                    day.style.backgroundColor = '';
+                    dayNumber.style.color = '';
+                }
+
+                if (shifts.length > 0) {
                     dayEvents.innerHTML = '';
-                    if (shifts.length === 1) {
-                        const s = shifts[0];
-                        const bg = s.backgroundColor || '#f4e4bc';
-                        day.style.backgroundColor = bg;
-                        const contrast = getContrastColor(bg);
-                        dayNumber.style.color = contrast;
+                    if (shifts.length === 1 && !externalEv) {
+                        // Ya se puso el fondo arriba, no hacemos nada aquí
                     } else {
-                        day.style.backgroundColor = '';
-                        shifts.slice(0, 4).forEach(s => {
+                        // Si hay más de uno o hay calendario externo que "gana" el fondo, mostramos barras
+                        const shiftLimit = (shifts.length === 1 && externalEv) ? 1 : 4;
+                        shifts.slice(0, shiftLimit).forEach(s => {
                             const bar = document.createElement('div');
                             bar.style.background = s.backgroundColor || '#9E9E9E';
                             bar.style.height = '6px';
@@ -5152,7 +5238,7 @@
                         }
                     }
                     // Mostrar indicadores de notas si hay
-                    if (monthFilters.viewMode !== 'shifts' && notes.length > 0) {
+                    if (notes.length > 0) {
                         const icon = document.createElement('div');
                         icon.textContent = '📜';
                         icon.style.position = 'absolute';
@@ -5175,13 +5261,16 @@
                             line.style.maxWidth = '100%';
 
                             const author = getUsers().find(u => String(u.id) === String(n.authorId));
-                            if (author && author.color) line.style.color = author.color;
+                            if (n.type === 'external') line.style.color = 'white';
+                            else if (n.backgroundColor) line.style.color = n.backgroundColor;
+                            else if (author && author.color) line.style.color = author.color;
                             else line.style.color = 'var(--iron-gall)';
 
                             const displayContent = medievalPreview(n.text || '');
 
-                            const timePart = (n.time && !n.isRecurring) ? `<div style="font-weight:bold; opacity:0.8; font-size: 0.9em; margin-top:2px;">${n.time}</div>` : '';
-                            line.innerHTML = `<div style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${displayContent || '...'}</div>` + timePart;
+                            // Mostrar la hora si existe (para externos y notas normales)
+                            const timePart = n.time ? `<span style="font-weight:bold; color: inherit; opacity:0.7; margin-right:4px;">${n.time}</span>` : '';
+                            line.innerHTML = `<div style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${timePart}${displayContent || '...'}</div>`;
 
                             // Empujar recurrentes al fondo si es el primero de los recurrentes
                             const firstRecurringIndex = notes.slice(0, limit).findIndex(x => x.isRecurring);
@@ -5207,7 +5296,9 @@
                         line.style.webkitBoxOrient = 'vertical';
 
                         const author = getUsers().find(u => String(u.id) === String(n.authorId));
-                        if (author && author.color) line.style.color = author.color;
+                        if (n.type === 'external') line.style.color = 'white';
+                        else if (n.backgroundColor) line.style.color = n.backgroundColor;
+                        else if (author && author.color) line.style.color = author.color;
 
                         const displayContent = medievalPreview(n.text || '');
                         const timePart = (n.time && !n.isRecurring) ? `<div style="font-weight:bold; opacity:0.9; margin-top:2px;">${n.time}</div>` : '';
@@ -5392,7 +5483,7 @@
                 const allEvents = await getEventsForDate(d);
 
                 allEvents.forEach(e => {
-                    if (e.type !== 'shift' && e.type !== 'note') return;
+                    if (e.type !== 'shift' && e.type !== 'note' && e.type !== 'external') return;
                     const timeStr = (e.type === 'shift' ? e.startTime : e.time) || '';
                     if (!timeStr.includes(':')) return;
 
@@ -5425,6 +5516,10 @@
                         box.style.background = e.backgroundColor || 'var(--lapis-lazuli)';
                         box.style.color = 'white';
                         box.style.borderLeft = '3px solid var(--gold-leaf)';
+                    } else if (e.type === 'external') {
+                        box.style.background = e.backgroundColor || '#8B2635';
+                        box.style.color = 'white';
+                        box.style.borderLeft = '3px solid white';
                     } else {
                         box.style.background = 'var(--parchment)';
                         box.style.color = 'var(--iron-gall)';
@@ -5454,7 +5549,7 @@
                 const allEvents = await getEventsForDate(d);
 
                 // Filtrar solo las notas
-                const relevantEvents = allEvents.filter(e => e.type === 'note');
+                const relevantEvents = allEvents.filter(e => e.type === 'note' || e.type === 'external');
                 if (relevantEvents.length === 0) continue;
 
                 totalEvents += relevantEvents.length;
@@ -5529,6 +5624,10 @@
                         badge.style.background = '#E3F2FD';
                         badge.style.color = '#2196F3';
                         badge.textContent = 'Nota';
+                    } else if (e.type === 'external') {
+                        badge.style.background = e.backgroundColor || '#8B2635';
+                        badge.style.color = 'white';
+                        badge.textContent = 'EXT';
                     } else {
                         badge.style.background = (e.backgroundColor || '#eee') + '33'; // 20% opacidad
                         badge.style.color = e.backgroundColor || '#777';
@@ -6575,6 +6674,12 @@
                 if (dTime > end.getTime()) return false;
             }
 
+            // EXCEPCIONES: Si la fecha actual está en la lista de exclusiones, no aplica
+            if (def.exceptions && def.exceptions.length > 0) {
+                const dateKey = formatDateKey(dateObj);
+                if (def.exceptions.includes(dateKey)) return false;
+            }
+
             const freq = def.frequency;
 
             if (freq === 'daily') return true;
@@ -6599,7 +6704,7 @@
                 const unit = def.unit || 'day';
 
                 if (unit === 'day') {
-                    const diffDays = Math.floor((dTime - startTime) / (1000 * 60 * 60 * 24));
+                    const diffDays = Math.round((dTime - startTime) / (1000 * 60 * 60 * 24));
                     if (diffDays % interval !== 0) return false;
                     // Filtro opcional por días de la semana
                     if (def.daysOfWeek && def.daysOfWeek.length > 0) {
@@ -6609,7 +6714,7 @@
                 }
 
                 if (unit === 'week') {
-                    const diffWeeks = Math.floor((dTime - startTime) / (1000 * 60 * 60 * 24 * 7));
+                    const diffWeeks = Math.round((dTime - startTime) / (1000 * 60 * 60 * 24 * 7));
                     if (diffWeeks % interval !== 0) return false;
 
                     // Si se especificaron días de la semana
@@ -6636,6 +6741,53 @@
                 }
             }
             return false;
+        }
+
+        // =========================
+        // Lógica de UI Recurrentes (Excepciones)
+        // =========================
+        let currentExceptions = [];
+
+        function addExceptionToUI() {
+            const date = document.getElementById('recExceptionInput').value;
+            if (date && !currentExceptions.includes(date)) {
+                currentExceptions.push(date);
+                renderExceptionsUI();
+                document.getElementById('recExceptionInput').value = '';
+            }
+        }
+
+        function removeExceptionFromUI(date) {
+            currentExceptions = currentExceptions.filter(d => d !== date);
+            renderExceptionsUI();
+        }
+
+        function renderExceptionsUI() {
+            const list = document.getElementById('recExceptionsList');
+            if(!list) return;
+            list.innerHTML = '';
+            
+            // Ordenamos para que queden bonitas
+            currentExceptions.sort().forEach(date => {
+                const [y, m, d] = date.split('-');
+                const shortDate = `${d}/${m}`;
+                
+                const tag = document.createElement('div');
+                tag.style.background = 'var(--accent-red)';
+                tag.style.color = 'white';
+                tag.style.padding = '2px 8px';
+                tag.style.borderRadius = '20px';
+                tag.style.fontSize = '10px';
+                tag.style.fontFamily = 'Cinzel';
+                tag.style.display = 'flex';
+                tag.style.alignItems = 'center';
+                tag.style.gap = '5px';
+                tag.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                tag.style.border = '1px solid white';
+                
+                tag.innerHTML = `<span>${shortDate}</span> <span style="cursor:pointer; font-weight:bold; font-size: 14px; line-height: 1;" onclick="removeExceptionFromUI('${date}')">&times;</span>`;
+                list.appendChild(tag);
+            });
         }
 
         // =========================
@@ -6740,7 +6892,13 @@
                 const sDate = fmtDate(def.startDate || def.start);
                 const eDate = fmtDate(def.endDate);
                 const rangeStr = `${sDate} ${eDate ? 'hasta ' + eDate : '(Sin fin)'}`;
-                subtitle.innerHTML = `📅 ${rangeStr}<br>⏰ ${def.time || 'Sin hora'}`;
+                
+                let exceptStr = '';
+                if (def.exceptions && def.exceptions.length > 0) {
+                    exceptStr = `<br><span style="color:var(--accent-red); font-weight:bold;">🚫 EXCEPTOS: ${def.exceptions.length}</span>`;
+                }
+                
+                subtitle.innerHTML = `📅 ${rangeStr}<br>⏰ ${def.time || 'Sin hora'}${exceptStr}`;
 
                 const actions = document.createElement('div');
                 actions.style.position = 'absolute';
@@ -6808,6 +6966,10 @@
                 cb.checked = days.includes(parseInt(cb.value));
             });
 
+            // Excepciones
+            currentExceptions = [...(def.exceptions || [])];
+            renderExceptionsUI();
+
             updateRecUI();
 
             // Cambiar botón
@@ -6833,6 +6995,9 @@
             document.getElementById('recFontSize').value = '9';
             const checkboxes = document.querySelectorAll('input[name="recDay"]');
             checkboxes.forEach(cb => cb.checked = false);
+
+            currentExceptions = [];
+            renderExceptionsUI();
 
             updateRecUI();
             const btn = document.querySelector('#recurringModal .btn-accept');
@@ -6870,6 +7035,7 @@
                 interval,
                 unit,
                 daysOfWeek: days,
+                exceptions: [...currentExceptions],
                 fontSize: parseInt(fontSize),
                 userId: getCurrentUserId() || '1'
             };
@@ -6995,6 +7161,16 @@
                                 });
                             }
                         }
+                    });
+                }
+
+                // 5. INYECTAR CALENDARIOS EXTERNOS
+                if (externalEventsByDate[dateKey]) {
+                    externalEventsByDate[dateKey].forEach(ex => {
+                         // Evitar duplicados exactos si se importó más de una vez
+                         if (!finalEvents.some(e => e.text === ex.text && e.isExternal)) {
+                             finalEvents.push(ex);
+                         }
                     });
                 }
 
@@ -9295,8 +9471,275 @@
 
 
         // ============================================
-        // INICIALIZACIÓN
+        // CALENDARIOS EXTERNOS (iCal) - SISTEMA DE SUSCRIPCIÓN
         // ============================================
+        let externalCalendars = JSON.parse(localStorage.getItem('external_calendars_subs') || '[]');
+        let externalEventsByDate = {}; // { "YYYY-MM-DD": [ { text, category, backgroundColor, type: 'external' } ] }
+        let currentExtEntryMode = 'url';
+
+        function openExternalCalendars() {
+            document.getElementById('settingsModal').classList.remove('show');
+            document.getElementById('externalCalendarsModal').classList.add('show');
+            renderExternalCalsList();
+            toggleExtEntryMode('url');
+        }
+
+        function toggleExtEntryMode(mode) {
+            currentExtEntryMode = mode;
+            document.getElementById('extCalUrlGroup').style.display = mode === 'url' ? 'block' : 'none';
+            document.getElementById('extCalTextGroup').style.display = mode === 'text' ? 'block' : 'none';
+        }
+
+        function renderExternalCalsList() {
+            const list = document.getElementById('externalCalsList');
+            if (externalCalendars.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#999; font-style:italic; padding:20px; font-size:12px;">No hay suscripciones en el pergamino</div>';
+                return;
+            }
+            list.innerHTML = externalCalendars.map(c => `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:15px; border:1px solid #c5a059; border-left: 10px solid ${c.color || 'var(--gold-leaf)'}; background: rgba(255,255,255,0.4); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s;">
+                    <div style="flex:1; margin-right: 15px;">
+                        <div style="font-weight:bold; color:#800; font-family:var(--font-header); font-size:16px; margin-bottom:4px;">${c.name}</div>
+                        <div style="font-size:11px; color:#5d4037; opacity:0.8; word-break: break-all; font-family: 'Almendra', serif;">${c.url || '(Texto Pegado)'}</div>
+                    </div>
+                    <button class="btn" style="background: #a00; color: white !important; padding: 10px; font-size: 16px; border: 1px solid black; cursor: pointer; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" onclick="removeExternalCalendar('${c.id}')" title="Eliminar Suscripción">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        async function addExternalCalendar() {
+            const nameEl = document.getElementById('extCalName');
+            const urlEl = document.getElementById('extCalUrl');
+            const textEl = document.getElementById('extCalRawText');
+            const colorEl = document.getElementById('extCalColor');
+            
+            const name = nameEl.value.trim();
+            const url = urlEl.value.trim();
+            const rawText = textEl.value.trim();
+            const color = colorEl.value;
+
+            if (!name) {
+                showToast('⚠️ Nombre es requerido para el pergamino');
+                return;
+            }
+
+            if (currentExtEntryMode === 'url' && !url) {
+                showToast('⚠️ URL es requerida');
+                return;
+            }
+
+            if (currentExtEntryMode === 'text' && !rawText) {
+                showToast('⚠️ No has pegado el texto del calendario');
+                return;
+            }
+
+            const newCal = { 
+                id: Date.now(), 
+                name, 
+                url: currentExtEntryMode === 'url' ? url : '', 
+                rawText: currentExtEntryMode === 'text' ? rawText : '',
+                color 
+            };
+            externalCalendars.push(newCal);
+            localStorage.setItem('external_calendars_subs', JSON.stringify(externalCalendars));
+            
+            nameEl.value = '';
+            urlEl.value = '';
+            textEl.value = '';
+            
+            showToast('📜 Uniendo hilos temporales...');
+            await loadExternalCalendars();
+            renderExternalCalsList();
+        }
+
+        async function removeExternalCalendar(id) {
+            // Eliminar de la lista local inmediatamente
+            externalCalendars = externalCalendars.filter(c => String(c.id) !== String(id));
+            localStorage.setItem('external_calendars_subs', JSON.stringify(externalCalendars));
+            
+            // Refrescar UI rápido para que el usuario vea que se ha borrado
+            renderExternalCalsList();
+            showToast('🗑️ Suscripción borrada del pergamino');
+
+            // Recargar eventos en segundo plano
+            await loadExternalCalendars();
+        }
+
+        function parseICS(data) {
+            const events = [];
+            // Unfold lines: iCal lines starting with space/tab belong to previous line
+            const unfolded = data.replace(/\r?\n[ \t]/g, '');
+            const lines = unfolded.split(/\r?\n/);
+            let currentEvent = null;
+
+            for (let line of lines) {
+                if (line.startsWith('BEGIN:VEVENT')) {
+                    currentEvent = {};
+                } else if (line.startsWith('END:VEVENT')) {
+                    if (currentEvent && currentEvent.start) {
+                        events.push(currentEvent);
+                    }
+                    currentEvent = null;
+                } else if (currentEvent) {
+                    if (line.startsWith('DTSTART')) {
+                        const parts = line.split(':');
+                        const val = parts[parts.length - 1]; 
+                        
+                        // Capturar Fecha YYYYMMDD
+                        const dateMatch = val.match(/(\d{4})(\d{2})(\d{2})/);
+                        if (dateMatch) {
+                            currentEvent.start = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+                            
+                            // Capturar Hora si existe (T000000)
+                            const timeMatch = val.match(/T(\d{2})(\d{2})/);
+                            if (timeMatch) {
+                                // Intentamos convertir a hora local si es UTC (termina en Z)
+                                if (val.includes('Z')) {
+                                    try {
+                                        const iso = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${timeMatch[1]}:${timeMatch[2]}:00Z`;
+                                        const d = new Date(iso);
+                                        if (!isNaN(d.getTime())) {
+                                            currentEvent.time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                        }
+                                    } catch(e) { 
+                                        currentEvent.time = `${timeMatch[1]}:${timeMatch[2]}`; 
+                                    }
+                                } else {
+                                    // Hora "floating" o Local sin Z
+                                    currentEvent.time = `${timeMatch[1]}:${timeMatch[2]}`;
+                                }
+                            }
+                        }
+                    } else if (line.indexOf('SUMMARY') !== -1 && line.indexOf(':') !== -1) {
+                        const parts = line.split(':');
+                        currentEvent.summary = parts.slice(1).join(':').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\n/g, '\n').trim();
+                    } else if (line.indexOf('DESCRIPTION') !== -1 && line.indexOf(':') !== -1) {
+                        const parts = line.split(':');
+                        currentEvent.description = parts.slice(1).join(':').replace(/\\n/g, '\n').trim();
+                    }
+                }
+            }
+            return events;
+        }
+
+        async function fetchWithProxy(url) {
+            // 1. Intentar fetch directo primero (rápido, pero suele fallar por CORS)
+            try {
+                const resp = await fetch(url);
+                if (resp.ok) return await resp.text();
+            } catch (e) {
+                // Falló directo, seguimos al siguiente nivel
+            }
+
+            // 2. Intentar con AllOrigins (Proxy 1)
+            try {
+                const proxyUrl1 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+                const resp = await fetch(proxyUrl1);
+                if (resp.ok) {
+                    const json = await resp.json();
+                    if (json && json.contents) return json.contents;
+                }
+            } catch (e) {
+                // Siguiente intento
+            }
+
+            // 3. Intentar con CorsProxy.io (Proxy 2) - Muy fiable para Google
+            try {
+                const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                const resp = await fetch(proxyUrl2);
+                if (resp.ok) return await resp.text();
+            } catch (e) {
+                // Siguiente intento
+            }
+
+            // 4. Intentar con CodeTabs (Proxy 3) - Respaldo final
+            try {
+                const proxyUrl3 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+                const resp = await fetch(proxyUrl3);
+                if (resp.ok) return await resp.text();
+            } catch (proxyError) {
+                console.error("Fallo definitivo en la conexión externa:", proxyError);
+            }
+
+            throw new Error("No se pudo alcanzar el pergamino lejano");
+        }
+
+        async function loadExternalCalendars() {
+            externalEventsByDate = {}; // Limpiar memoria de eventos filtrados para renderizado
+            
+            if (!externalCalendars || externalCalendars.length === 0) {
+                renderCalendar();
+                renderWeeklyView();
+                return;
+            }
+
+            // Memoria persistente para evitar bloqueos por refrescar mucho la página (429 Too Many Requests)
+            const CACHE_KEY = 'external_calendars_content_cache';
+            let contentCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+            const CACHE_DURATION = 1000 * 60 * 60; // 1 hora de memoria
+            const now = Date.now();
+            let cacheUpdated = false;
+
+            // Cargar todos en paralelo para que uno lento no bloquee al resto
+            const promises = externalCalendars.map(async (cal) => {
+                try {
+                    let data = '';
+                    if (cal.rawText) {
+                        data = cal.rawText;
+                    } else if (cal.url) {
+                        // Verificar si tenemos este contenido en memoria y si es reciente
+                        const cached = contentCache[cal.url];
+                        if (cached && (now - cached.timestamp < CACHE_DURATION)) {
+                            // Usamos el pergamino que ya teníamos guardado (Caché)
+                            data = cached.content;
+                        } else {
+                            // Si no hay memoria o expiró (1h), descargamos del pergamino lejano
+                            data = await fetchWithProxy(cal.url);
+                            // Guardamos en la memoria para la próxima vez
+                            contentCache[cal.url] = {
+                                content: data,
+                                timestamp: now
+                            };
+                            cacheUpdated = true;
+                        }
+                    } else {
+                        return;
+                    }
+
+                    if (!data || data.trim().length < 20) return;
+
+                    const events = parseICS(data);
+                    events.forEach(ev => {
+                        if (ev.start) { // Asegurarnos de que tiene fecha válida
+                            if (!externalEventsByDate[ev.start]) externalEventsByDate[ev.start] = [];
+                            externalEventsByDate[ev.start].push({
+                                text: ev.summary || '(Sin Título)',
+                                time: ev.time || '', // IMPORTAR LA HORA
+                                description: ev.description || '',
+                                type: 'external',
+                                category: cal.name,
+                                backgroundColor: cal.color,
+                                isExternal: true,
+                                fontSize: 10
+                            });
+                        }
+                    });
+                } catch (e) {
+                    console.warn(`Incidente con el calendario: ${cal.name}. Error:`, e.message);
+                }
+            });
+
+            await Promise.all(promises);
+            
+            // Guardar la caché actualizada si hubo cambios
+            if (cacheUpdated) {
+                localStorage.setItem(CACHE_KEY, JSON.stringify(contentCache));
+            }
+
+            renderCalendar();
+            renderWeeklyView();
+        }
+
         async function init() {
             // Cargar datos vitales
             await loadUsersData();
@@ -9319,6 +9762,7 @@
             // Inicializar extras
             displayMedievalQuote();
             autoLoadSuppliesAsChecked();
+            await loadExternalCalendars();
 
             // Iniciar vigía de alarmas cada minuto
             setInterval(checkAlarms, 60000);
