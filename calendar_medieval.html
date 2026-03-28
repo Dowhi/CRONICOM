@@ -9534,12 +9534,21 @@
             }
 
             const newCal = { 
-                id: Date.now(), 
+                id: Date.now().toString(), 
                 name, 
                 url: currentExtEntryMode === 'url' ? url : '', 
                 rawText: currentExtEntryMode === 'text' ? rawText : '',
                 color 
             };
+
+            // Guardar en Firestore si está disponible
+            if (isFirebaseConfigured && db) {
+                try {
+                    await db.collection('external_calendars').doc(newCal.id).set(newCal);
+                } catch(e) { console.error("Error sincronizando...", e); }
+            }
+
+            // Sincronizar lista local
             externalCalendars.push(newCal);
             localStorage.setItem('external_calendars_subs', JSON.stringify(externalCalendars));
             
@@ -9553,16 +9562,41 @@
         }
 
         async function removeExternalCalendar(id) {
-            // Eliminar de la lista local inmediatamente
+            // Borrar de Firestore
+            if (isFirebaseConfigured && db) {
+                try {
+                    await db.collection('external_calendars').doc(String(id)).delete();
+                } catch(e) { console.error("Error borrando...", e); }
+            }
+
+            // Borrado local rápido
             externalCalendars = externalCalendars.filter(c => String(c.id) !== String(id));
             localStorage.setItem('external_calendars_subs', JSON.stringify(externalCalendars));
             
-            // Refrescar UI rápido para que el usuario vea que se ha borrado
             renderExternalCalsList();
             showToast('🗑️ Suscripción borrada del pergamino');
-
-            // Recargar eventos en segundo plano
             await loadExternalCalendars();
+        }
+
+        async function loadExternalCalendarsConfig() {
+            // Intentar cargar de Firestore primero
+            if (isFirebaseConfigured && db) {
+                try {
+                    const snap = await db.collection('external_calendars').get();
+                    if (!snap.empty) {
+                        externalCalendars = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        localStorage.setItem('external_calendars_subs', JSON.stringify(externalCalendars));
+                        return;
+                    } else if (externalCalendars.length > 0) {
+                        // Migrar local -> remoto la primera vez
+                        console.log("Migrando calendarios locales a la nube...");
+                        for (const cal of externalCalendars) {
+                            const id = String(cal.id || Date.now());
+                            await db.collection('external_calendars').doc(id).set(cal);
+                        }
+                    }
+                } catch(e) { console.warn("Modo local de calendarios activado (sin red)"); }
+            }
         }
 
         function parseICS(data) {
@@ -9744,7 +9778,9 @@
             // Cargar datos vitales
             await loadUsersData();
             await loadShiftTemplates();
+            await loadExternalCalendarsConfig(); // <--- Cargar suscripciones de la nube
             loadSavedTheme();
+            await loadExternalCalendars(); // <--- Descargar contenido iCal (parcialmente de caché local)
 
             // Iniciar sincronización real si estamos en línea
             if (isFirebaseConfigured && db) {
