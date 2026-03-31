@@ -3733,14 +3733,7 @@
                     messaging = firebase.messaging();
                 }
 
-                // Habilitar persistencia offline (Compat v10)
-                db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-                    if (err.code == 'failed-precondition') {
-                        console.warn('Persistencia: múltiples pestañas abiertas');
-                    } else if (err.code == 'unimplemented') {
-                        console.warn('Persistencia: no soportada');
-                    }
-                });
+                // Persistencia local (se confía en localStorage como backup principal en vez de enablePersistence nativo, para evitar warnings)
 
                 isFirebaseConfigured = true;
                 isFirebaseConnected = true;
@@ -9434,7 +9427,7 @@
             for (const category in masterData) {
                 for (const text of masterData[category]) {
                     const lowerText = text.toLowerCase();
-                    const existing = existingItems.find(item => item.text.toLowerCase() === lowerText);
+                    const existing = existingItems.find(item => item.text && item.text.toLowerCase() === lowerText);
 
                     if (!existing) {
                         const newItem = {
@@ -9657,15 +9650,10 @@
         }
 
         async function fetchWithProxy(url) {
-            // 1. Intentar fetch directo primero (rápido, pero suele fallar por CORS)
-            try {
-                const resp = await fetch(url);
-                if (resp.ok) return await resp.text();
-            } catch (e) {
-                // Falló directo, seguimos al siguiente nivel
-            }
+            // Saltamos el fetch directo para evitar el error CORS rojo en la consola.
+            // Los siguientes proxies fallarán en silencio (con status 400/429) si no responden, pero evitan el log de CORS.
 
-            // 2. Intentar con AllOrigins (Proxy 1)
+            // 1. Intentar con AllOrigins (Proxy 1)
             try {
                 const proxyUrl1 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&t=${Date.now()}`;
                 const resp = await fetch(proxyUrl1);
@@ -9674,25 +9662,25 @@
                     if (json && json.contents) return json.contents;
                 }
             } catch (e) {
-                // Siguiente intento
+                // Silenciamos los errores
             }
 
-            // 3. Intentar con CorsProxy.io (Proxy 2) - Muy fiable para Google
+            // 2. Intentar con CorsProxy.io (Proxy 2)
             try {
                 const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 const resp = await fetch(proxyUrl2);
                 if (resp.ok) return await resp.text();
             } catch (e) {
-                // Siguiente intento
+                // Silenciado
             }
 
-            // 4. Intentar con CodeTabs (Proxy 3) - Respaldo final
+            // 3. Intentar con codetabs
             try {
                 const proxyUrl3 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
                 const resp = await fetch(proxyUrl3);
                 if (resp.ok) return await resp.text();
             } catch (proxyError) {
-                console.error("Fallo definitivo en la conexión externa:", proxyError);
+                // Silenciado
             }
 
             throw new Error("No se pudo alcanzar el pergamino lejano");
