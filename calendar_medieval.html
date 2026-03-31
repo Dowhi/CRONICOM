@@ -2444,10 +2444,94 @@
         .calendar-grid.hide-weekends .day-weekend {
             display: none !important;
         }
+        /* ESCUDO DE PRIVACIDAD (LINCHGATE) */
+        #privacyShield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-body);
+            background-image: var(--body-mask);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .shield-content {
+            max-width: 400px;
+            padding: 40px;
+            background: var(--bg-surface);
+            border: 6px double var(--border-color);
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .shield-title {
+            font-family: var(--font-header);
+            font-size: 2rem;
+            color: var(--accent-red);
+            margin-bottom: 20px;
+            text-shadow: var(--text-shadow);
+        }
+
+        .shield-text {
+            font-family: var(--font-main);
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: var(--text-main);
+        }
+
+        .google-btn {
+            background: #fff;
+            color: #757575;
+            padding: 12px 24px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0 auto;
+        }
+
+        .google-btn:hover {
+            background: #f8f8f8;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .google-btn img { width: 20px; }
+
+        .denied-msg {
+            color: #dc2626;
+            margin-top: 20px;
+            font-weight: bold;
+            display: none;
+        }
     </style>
 </head>
 
 <body>
+    <!-- ESCUDO DE PRIVACIDAD -->
+    <div id="privacyShield">
+        <div class="shield-content">
+            <h1 class="shield-title">🏰 Puerta del Castillo</h1>
+            <p class="shield-text">Identificaos, noble viajero. Solo los miembros del linaje real pueden cruzar este umbral.</p>
+            <button class="google-btn" onclick="loginWithGoogle()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Entrar con Google
+            </button>
+            <div id="deniedMessage" class="denied-msg">🛡️ Vuestro linaje no figura en nuestras crónicas. Acceso denegado.</div>
+            <div id="authLoading" style="display:none; margin-top:20px;">📜 Verificando pergaminos...</div>
+        </div>
+    </div>
     <audio id="ambientAudio" loop>
         <source id="ambientSource" src="" type="audio/mpeg">
     </audio>
@@ -3716,9 +3800,16 @@
 
         // Inicializar Firebase (solo si está configurado)
         let db = null;
+        let auth = null;
         let messaging = null;
         let isFirebaseConfigured = false;
         let isFirebaseConnected = false;
+        
+        // --- WHITLELIST DE MIEMBROS AUTORIZADOS ---
+        const AUTHORIZED_EMAILS = [
+            "Dowhi@msn.com",
+            "maricarmen.martinezjimenez@hotmail.es"
+        ];
         let useLocalStorage = false;
         let recurringEventsDefinitions = [];
 
@@ -3729,6 +3820,7 @@
                     firebase.initializeApp(firebaseConfig);
                 }
                 db = firebase.firestore();
+                auth = firebase.auth();
                 if (firebase.messaging.isSupported()) {
                     messaging = firebase.messaging();
                 }
@@ -3745,6 +3837,28 @@
                 isFirebaseConfigured = true;
                 isFirebaseConnected = true;
                 console.log('✅ Firebase conectado correctamente');
+                
+                // --- GESTIÓN DE PRIVACIDAD ---
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        const email = user.email.toLowerCase();
+                        if (AUTHORIZED_EMAILS.map(e => e.toLowerCase()).includes(email)) {
+                            // Autorizado
+                            document.getElementById('privacyShield').style.display = 'none';
+                            console.log('👑 Bienvenida, noble:', email);
+                        } else {
+                            // Logueado pero no en lista blanca
+                            document.getElementById('deniedMessage').style.display = 'block';
+                            console.warn('⚔️ Intruso detectado:', email);
+                            // Opcional: Cerrar sesión tras unos segundos
+                            // setTimeout(() => auth.signOut(), 3000);
+                        }
+                    } else {
+                        // No logueado
+                        document.getElementById('privacyShield').style.display = 'flex';
+                    }
+                });
+
             } catch (error) {
                 console.error('❌ Error initializing Firebase:', error);
                 console.warn('Firebase no configurado, usando modo demo con localStorage');
@@ -7043,7 +7157,7 @@
             try {
                 if (editingRecurringId) {
                     if (isFirebaseConfigured && db && !editingRecurringId.startsWith('local_')) {
-                        await db.collection('recurring_events').doc(editingRecurringId).update(data);
+                        await db.collection('recurring_events').doc(editingRecurringId).set(data, { merge: true });
                     } else {
                         const idx = recurringEventsDefinitions.findIndex(d => d.id === editingRecurringId);
                         if (idx !== -1) {
@@ -8830,11 +8944,12 @@
         }
 
         async function updateShoppingItem(id, data) {
-            if (isFirebaseConfigured && db && id && typeof id === 'string' && id.length > 5) {
-                await db.collection('shopping_list').doc(id).update(data);
+            const idStr = String(id);
+            if (isFirebaseConfigured && db && id && idStr.length > 5) {
+                await db.collection('shopping_list').doc(idStr).set(data, { merge: true });
             } else {
                 const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                const idx = items.findIndex(it => (it.id === id) || (it.timestamp == id));
+                const idx = items.findIndex(it => (String(it.id) === idStr) || (String(it.timestamp) === idStr));
                 if (idx !== -1) {
                     items[idx] = { ...items[idx], ...data };
                     localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
@@ -8846,12 +8961,13 @@
         async function getShoppingItemsFromDB() {
             let items = [];
             if (isFirebaseConfigured && db) {
-                const snapshot = await db.collection('shopping_list').get();
+                const userId = getCurrentUserId();
+                const snapshot = await db.collection('shopping_list').where('userId', '==', userId).get();
                 items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             } else {
                 items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
             }
-            return items.map(it => ({ ...it, id: it.id || it.timestamp || Date.now() }));
+            return items.map(it => ({ ...it, text: it.text || '', id: it.id || it.timestamp || Date.now() }));
         }
 
         async function renderShoppingItems() {
@@ -8866,6 +8982,7 @@
             const uniqueItemsMap = new Map();
             allItems.forEach(item => {
                 const text = (item.text || '').trim();
+                if (!text) return; // Ignorar items corruptos
                 const lowerText = text.toLowerCase();
 
                 let correctCategory = item.category;
@@ -8882,13 +8999,13 @@
                     uniqueItemsMap.set(lowerText, { ...item, category: correctCategory });
 
                     // Si la categoría fue corregida de "Otros" a algo real, actualizamos en DB sin re-renderizar
-                    if (item.category !== correctCategory && item.id) {
-                        const itemId = item.id || item.timestamp;
-                        if (isFirebaseConfigured && db && typeof itemId === 'string' && itemId.length > 5) {
-                            db.collection('shopping_list').doc(itemId).update({ category: correctCategory }).catch(() => { });
+                    if (item.category !== correctCategory && itemId) {
+                        const idStr = String(itemId);
+                        if (isFirebaseConfigured && db && idStr.length > 5) {
+                            db.collection('shopping_list').doc(idStr).set({ category: correctCategory }, { merge: true }).catch(() => { });
                         } else {
                             const localItems = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                            const idx = localItems.findIndex(it => (it.id === itemId) || (it.timestamp == itemId));
+                            const idx = localItems.findIndex(it => (String(it.id) === idStr) || (String(it.timestamp) === idStr));
                             if (idx !== -1) {
                                 localItems[idx].category = correctCategory;
                                 localStorage.setItem('medieval_shopping_list', JSON.stringify(localItems));
@@ -8903,11 +9020,13 @@
                         const itemId = existing.id || existing.timestamp;
                         if (itemId) {
                             if (isFirebaseConfigured && db && typeof itemId === 'string' && itemId.length > 5) {
-                                db.collection('shopping_list').doc(itemId).update({ category: correctCategory }).catch(() => { });
+                                db.collection('shopping_list').doc(itemId).set({ category: correctCategory }, { merge: true }).catch(() => { });
                             }
                         }
                     }
-                    if (item.done === false) existing.done = false;
+                    // Si alguno está marcado como "hecho", lo respetamos si no hay conflictos
+                    if (item.done && !existing.done) existing.done = true;
+                    // Si ya está en Stock en alguna de las copias, lo marcamos globalmente como en Stock
                     if (item.inStock) existing.inStock = true;
                 }
 
@@ -9076,14 +9195,23 @@
 
         async function toggleShoppingItem(id) {
             const items = await getShoppingItemsFromDB();
-            const item = items.find(it => (it.id || it.timestamp) == id);
+            const item = items.find(it => (String(it.id) === String(id)) || (String(it.timestamp) === String(id)));
             if (!item) return;
             const newDone = !item.done;
 
-            await updateShoppingItem(id, { done: newDone });
-
             if (newDone && currentShoppingTab === 'buy') {
-                showToast('✅ Añadido al saco');
+                // Al "seleccionar" en lista de compra, lo mandamos al Stock inmediatamente
+                await updateShoppingItem(id, { done: false, inStock: true });
+                showToast('📦 Trasladado al Bazar (Stock)');
+            } else if (!newDone && currentShoppingTab === 'stock') {
+                // Si lo desmarcamos en el Bazar, vuelve a la lista de compra
+                await updateShoppingItem(id, { done: false, inStock: false });
+                showToast('🛍️ Movido a lista de compra');
+            } else {
+                await updateShoppingItem(id, { done: newDone });
+                if (newDone && currentShoppingTab === 'buy') {
+                    showToast('✅ Añadido al saco');
+                }
             }
         }
 
@@ -9212,11 +9340,12 @@
         }
 
         async function removeShoppingItem(id) {
-            if (isFirebaseConfigured && db && id && typeof id === 'string' && id.length > 5) {
-                await db.collection('shopping_list').doc(id).delete();
+            const idStr = String(id);
+            if (isFirebaseConfigured && db && id && idStr.length > 5) {
+                await db.collection('shopping_list').doc(idStr).delete();
             } else {
                 const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                const idx = items.findIndex(it => (it.id === id) || (it.timestamp == id));
+                const idx = items.findIndex(it => (String(it.id) === idStr) || (String(it.timestamp) === idStr));
                 if (idx !== -1) {
                     items.splice(idx, 1);
                     localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
@@ -9412,14 +9541,14 @@
                     "Mayonesa", "Ketchup", "Caldo"
                 ],
                 "Limpieza del hogar": [
-                    "Detergente para lavadora", "Suavizante", "Detergente lavavajillas",
+                    "Detergente para lavadora", "Suavizante", "Lavavajillas",
                     "Estropajos", "Lejía",
                     "Bolsas de basura", "Papel de cocina"
                 ],
                 "Baño e higiene personal": [
                     "Papel higiénico", "Gel de baño", "Champú", "Desodorante",
                     "Cepillos de dientes",
-                    "Toallitas", "Pañuelos de papel", "Vagirux"
+                    "Toallitas", "Pañuelos de papel"
                 ]
             };
         }
@@ -9433,12 +9562,12 @@
 
             for (const category in masterData) {
                 for (const text of masterData[category]) {
-                    const lowerText = text.toLowerCase();
-                    const existing = existingItems.find(item => item.text.toLowerCase() === lowerText);
+                    const lowerText = (text || '').toLowerCase();
+                    const existing = existingItems.find(item => (item.text || '').toLowerCase() === lowerText);
 
                     if (!existing) {
                         const newItem = {
-                            text,
+                            text: text || '',
                             done: true,
                             userId,
                             category,
@@ -9772,6 +9901,19 @@
 
             renderCalendar();
             renderWeeklyView();
+        }
+
+        async function loginWithGoogle() {
+            if (!auth) return;
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                document.getElementById('authLoading').style.display = 'block';
+                // Cambiado a redirect para mayor estabilidad
+                await auth.signInWithRedirect(provider);
+            } catch (e) {
+                console.error('Error login:', e);
+                alert('No se pudo abrir el portal de Google.');
+            }
         }
 
         async function init() {
