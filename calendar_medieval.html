@@ -8928,27 +8928,37 @@
 
         async function updateShoppingItem(id, data) {
             const idStr = String(id);
-            if (isFirebaseConfigured && db && id && idStr.length > 5) {
-                await db.collection('shopping_list').doc(idStr).set(data, { merge: true });
-            } else {
-                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                const idx = items.findIndex(it => (String(it.id) === idStr) || (String(it.timestamp) === idStr));
-                if (idx !== -1) {
-                    items[idx] = { ...items[idx], ...data };
-                    localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
-                }
+            // Usar localStorage siempre como fuente de verdad
+            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+            const idx = items.findIndex(it => (String(it.id) === idStr) || (String(it.timestamp) === idStr));
+            if (idx !== -1) {
+                items[idx] = { ...items[idx], ...data };
+                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+            }
+            // Sincronizar con Firebase si está conectado (en segundo plano)
+            if (isFirebaseConnected && db && idStr.length > 5) {
+                db.collection('shopping_list').doc(idStr).set(data, { merge: true }).catch(e => console.warn('Firebase sync:', e));
             }
             renderShoppingItems();
         }
 
         async function getShoppingItemsFromDB() {
-            let items = [];
-            if (isFirebaseConfigured && db) {
-                const userId = getCurrentUserId();
-                const snapshot = await db.collection('shopping_list').where('userId', '==', userId).get();
-                items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            } else {
-                items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+            // localStorage es siempre la fuente principal (funciona sin conexión y sin CORS)
+            let items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+            // Si Firebase está conectado, intentamos sincronizar (sin bloquear la UI)
+            if (isFirebaseConnected && db) {
+                try {
+                    const userId = getCurrentUserId();
+                    const snapshot = await db.collection('shopping_list').where('userId', '==', userId).get();
+                    if (!snapshot.empty) {
+                        const fbItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        // Fusionar: preferir Firebase si hay datos, guardar en local
+                        localStorage.setItem('medieval_shopping_list', JSON.stringify(fbItems));
+                        items = fbItems;
+                    }
+                } catch(e) {
+                    console.warn('Firebase no disponible, usando localStorage:', e);
+                }
             }
             return items.map(it => ({ ...it, text: it.text || '', id: it.id || it.timestamp || Date.now() }));
         }
@@ -9324,15 +9334,16 @@
 
         async function removeShoppingItem(id) {
             const idStr = String(id);
-            if (isFirebaseConfigured && db && id && idStr.length > 5) {
-                await db.collection('shopping_list').doc(idStr).delete();
-            } else {
-                const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
-                const idx = items.findIndex(it => (String(it.id) === idStr) || (String(it.timestamp) === idStr));
-                if (idx !== -1) {
-                    items.splice(idx, 1);
-                    localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
-                }
+            // Eliminar de localStorage primero (siempre funciona)
+            const items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
+            const idx = items.findIndex(it => (String(it.id) === idStr) || (String(it.timestamp) === idStr));
+            if (idx !== -1) {
+                items.splice(idx, 1);
+                localStorage.setItem('medieval_shopping_list', JSON.stringify(items));
+            }
+            // Sincronizar con Firebase si está conectado (en segundo plano)
+            if (isFirebaseConnected && db && idStr.length > 5) {
+                db.collection('shopping_list').doc(idStr).delete().catch(e => console.warn('Firebase delete sync:', e));
             }
             renderShoppingItems();
         }
