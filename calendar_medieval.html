@@ -2523,13 +2523,15 @@
     <div id="privacyShield">
         <div class="shield-content">
             <h1 class="shield-title">🏰 Puerta del Castillo</h1>
-            <p class="shield-text">Identificaos, noble viajero. Solo los miembros del linaje real pueden cruzar este umbral.</p>
-            <button class="google-btn" onclick="loginWithGoogle()">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-                Entrar con Google
-            </button>
-            <div id="deniedMessage" class="denied-msg">🛡️ Vuestro linaje no figura en nuestras crónicas. Acceso denegado.</div>
-            <div id="authLoading" style="display:none; margin-top:20px;">📜 Verificando pergaminos...</div>
+            <p class="shield-text">Identificaos, noble viajero. Introducid el santo y seña de vuestro linaje.</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <input type="password" id="familyPassInput" placeholder="Sello de la casa..." 
+                       style="padding:12px; border:2px solid var(--border-color); border-radius:4px; font-family:var(--font-main); text-align:center; font-size:1.1rem;">
+                <button class="google-btn" onclick="checkFamilyPassword()" style="justify-content:center; background:var(--bg-header-gradient); color:white; border:none;">
+                    Abrir Portón
+                </button>
+            </div>
+            <div id="deniedMessage" class="denied-msg">🛡️ El santo y seña no es correcto.</div>
         </div>
     </div>
     <audio id="ambientAudio" loop>
@@ -3805,11 +3807,9 @@
         let isFirebaseConfigured = false;
         let isFirebaseConnected = false;
         
-        // --- WHITLELIST DE MIEMBROS AUTORIZADOS ---
-        const AUTHORIZED_EMAILS = [
-            "Dowhi@msn.com",
-            "maricarmen.martinezjimenez@hotmail.es"
-        ];
+        // --- CONFIGURACIÓN DE PRIVACIDAD FAMILIAR ---
+        const FAMILY_PASSWORD = "DOWHI"; // CAMBIA ESTO POR TU PALABRA SECRETA
+        const PASS_KEY = "medieval_pass_authorized";
         let useLocalStorage = false;
         let recurringEventsDefinitions = [];
 
@@ -3838,26 +3838,8 @@
                 isFirebaseConnected = true;
                 console.log('✅ Firebase conectado correctamente');
                 
-                // --- GESTIÓN DE PRIVACIDAD ---
-                auth.onAuthStateChanged(user => {
-                    if (user) {
-                        const email = user.email.toLowerCase();
-                        if (AUTHORIZED_EMAILS.map(e => e.toLowerCase()).includes(email)) {
-                            // Autorizado
-                            document.getElementById('privacyShield').style.display = 'none';
-                            console.log('👑 Bienvenida, noble:', email);
-                        } else {
-                            // Logueado pero no en lista blanca
-                            document.getElementById('deniedMessage').style.display = 'block';
-                            console.warn('⚔️ Intruso detectado:', email);
-                            // Opcional: Cerrar sesión tras unos segundos
-                            // setTimeout(() => auth.signOut(), 3000);
-                        }
-                    } else {
-                        // No logueado
-                        document.getElementById('privacyShield').style.display = 'flex';
-                    }
-                });
+                // --- GESTIÓN DE PRIVACIDAD SIMPLIFICADA ---
+                checkAuthorizedPass();
 
             } catch (error) {
                 console.error('❌ Error initializing Firebase:', error);
@@ -9903,16 +9885,29 @@
             renderWeeklyView();
         }
 
-        async function loginWithGoogle() {
-            if (!auth) return;
-            const provider = new firebase.auth.GoogleAuthProvider();
+        function checkAuthorizedPass() {
             try {
-                document.getElementById('authLoading').style.display = 'block';
-                // Cambiado a redirect para mayor estabilidad
-                await auth.signInWithRedirect(provider);
+                const isAuth = localStorage.getItem(PASS_KEY) === 'true';
+                if (isAuth) {
+                    document.getElementById('privacyShield').style.display = 'none';
+                } else {
+                    document.getElementById('privacyShield').style.display = 'flex';
+                }
             } catch (e) {
-                console.error('Error login:', e);
-                alert('No se pudo abrir el portal de Google.');
+                document.getElementById('privacyShield').style.display = 'flex';
+            }
+        }
+
+        function checkFamilyPassword() {
+            const input = document.getElementById('familyPassInput');
+            const pass = input.value.trim();
+            if (pass === FAMILY_PASSWORD) {
+                localStorage.setItem(PASS_KEY, 'true');
+                document.getElementById('privacyShield').style.display = 'none';
+                showToast('🔑 Acceso concedido al Castillo');
+            } else {
+                document.getElementById('deniedMessage').style.display = 'block';
+                input.value = '';
             }
         }
 
