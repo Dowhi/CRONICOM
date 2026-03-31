@@ -2525,13 +2525,14 @@
         <div class="shield-content">
             <h1 class="shield-title">🏰 Puerta del Castillo</h1>
             <p class="shield-text">Identificaos, noble viajero. Introducid el santo y seña de vuestro linaje.</p>
-            <div style="display:flex; flex-direction:column; gap:12px;">
-                <input type="password" id="familyPassInput" placeholder="Sello de la casa..." 
+            <form onsubmit="checkFamilyPassword(); return false;" style="display:flex; flex-direction:column; gap:12px;">
+                <input type="password" id="familyPassInput" placeholder="Sello de la casa..."
+                       autocomplete="current-password"
                        style="padding:12px; border:2px solid var(--border-color); border-radius:4px; font-family:var(--font-main); text-align:center; font-size:1.1rem;">
-                <button class="google-btn" onclick="checkFamilyPassword()" style="justify-content:center; background:var(--bg-header-gradient); color:white; border:none;">
+                <button type="submit" class="google-btn" style="justify-content:center; background:var(--bg-header-gradient); color:white; border:none;">
                     Abrir Portón
                 </button>
-            </div>
+            </form>
             <div id="deniedMessage" class="denied-msg">🛡️ El santo y seña no es correcto.</div>
         </div>
     </div>
@@ -3826,14 +3827,8 @@
                     messaging = firebase.messaging();
                 }
 
-                // Habilitar persistencia offline (Compat v10)
-                db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-                    if (err.code == 'failed-precondition') {
-                        console.warn('Persistencia: múltiples pestañas abiertas');
-                    } else if (err.code == 'unimplemented') {
-                        console.warn('Persistencia: no soportada');
-                    }
-                });
+                // Persistencia offline deshabilitada (evita warnings de deprecación)
+                // db.enablePersistence se elimina para compatibilidad con la versión actual
 
                 isFirebaseConfigured = true;
                 isFirebaseConnected = true;
@@ -9780,45 +9775,36 @@
         }
 
         async function fetchWithProxy(url) {
-            // 1. Intentar fetch directo primero (rápido, pero suele fallar por CORS)
+            // Ir directamente a los proxies (fetch directo siempre falla por CORS con Google)
+            
+            // 1. Intentar con CorsProxy.io (Muy fiable para Google)
             try {
-                const resp = await fetch(url);
-                if (resp.ok) return await resp.text();
-            } catch (e) {
-                // Falló directo, seguimos al siguiente nivel
-            }
-
-            // 2. Intentar con AllOrigins (Proxy 1)
-            try {
-                const proxyUrl1 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+                const proxyUrl1 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 const resp = await fetch(proxyUrl1);
-                if (resp.ok) {
-                    const json = await resp.json();
-                    if (json && json.contents) return json.contents;
-                }
+                if (resp.ok) return await resp.text();
             } catch (e) {
                 // Siguiente intento
             }
 
-            // 3. Intentar con CorsProxy.io (Proxy 2) - Muy fiable para Google
+            // 2. Intentar con AllOrigins
             try {
-                const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+                const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}&t=${Date.now()}`;
                 const resp = await fetch(proxyUrl2);
                 if (resp.ok) return await resp.text();
             } catch (e) {
                 // Siguiente intento
             }
 
-            // 4. Intentar con CodeTabs (Proxy 3) - Respaldo final
+            // 3. Intentar con CodeTabs (Respaldo final)
             try {
                 const proxyUrl3 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
                 const resp = await fetch(proxyUrl3);
                 if (resp.ok) return await resp.text();
             } catch (proxyError) {
-                console.error("Fallo definitivo en la conexión externa:", proxyError);
+                console.warn('Calendarios externos no disponibles en este momento');
             }
 
-            throw new Error("No se pudo alcanzar el pergamino lejano");
+            throw new Error('No se pudo alcanzar el pergamino lejano');
         }
 
         async function loadExternalCalendars() {
