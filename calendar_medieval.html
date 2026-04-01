@@ -5407,9 +5407,13 @@
 
         async function renderWeeklyGrid(start) {
             const container = document.getElementById('weeklyGrid');
-            container.innerHTML = '';
+            const hoursStart = 6, hoursEnd = 23;
 
-            const hoursStart = 6, hoursEnd = 23; // Ampliado un poco el rango
+            // Carga previa de todo el rango para consistencia asíncrona
+            const end = new Date(start); end.setDate(start.getDate() + 6);
+            await getEventsForRange(start, end);
+
+            const fragment = document.createDocumentFragment();
 
             // Header
             const header = document.createElement('div');
@@ -5424,7 +5428,6 @@
             const timeHeader = document.createElement('div');
             header.appendChild(timeHeader);
 
-            const weekStart = parseInt(localStorage.getItem('week_start') || '1');
             for (let i = 0; i < 7; i++) {
                 const d = new Date(start); d.setDate(start.getDate() + i);
                 const isToday = isSameDay(d, new Date());
@@ -5438,7 +5441,7 @@
                 cell.innerHTML = `<strong>${d.getDate()}</strong><br><small>${formatShortDay(d).split(',')[0]}</small>`;
                 header.appendChild(cell);
             }
-            container.appendChild(header);
+            fragment.appendChild(header);
 
             // Filas
             for (let h = hoursStart; h <= hoursEnd; h++) {
@@ -5467,10 +5470,11 @@
                     slot.style.borderRight = '1px solid rgba(112, 66, 20, 0.1)';
                     row.appendChild(slot);
                 }
-                container.appendChild(row);
+                fragment.appendChild(row);
             }
 
             // Inyectar eventos
+            const rows = fragment.querySelectorAll('.week-grid-row');
             for (let i = 0; i < 7; i++) {
                 const d = new Date(start); d.setDate(start.getDate() + i);
                 const allEvents = await getEventsForDate(d);
@@ -5484,7 +5488,7 @@
                     if (h < hoursStart || h > hoursEnd) return;
 
                     const rowIndex = h - hoursStart;
-                    const row = container.querySelectorAll('.week-grid-row')[rowIndex];
+                    const row = rows[rowIndex];
                     if (!row) return;
 
                     const slot = row.querySelector(`.day-slot-${i}`);
@@ -5526,28 +5530,35 @@
                     slot.appendChild(box);
                 });
             }
+            
+            // Reemplazo atómico del contenido para evitar duplicados concurrentes
+            container.innerHTML = '';
+            container.appendChild(fragment);
         }
 
         async function renderWeeklyAgenda(start) {
             const container = document.getElementById('weeklyAgenda');
-            container.innerHTML = '';
             container.style.padding = '10px';
-            container.style.background = '#f8f9fa'; // Un gris muy suave para que resalten las tarjetas blancas
+            container.style.background = '#f8f9fa';
 
+            // Carga previa de todo el rango
+            const end = new Date(start); end.setDate(start.getDate() + 6);
+            const eventsMap = await getEventsForRange(start, end);
+
+            const fragment = document.createDocumentFragment();
             let totalEvents = 0;
 
             for (let i = 0; i < 7; i++) {
                 const d = new Date(start); d.setDate(start.getDate() + i);
                 const isToday = isSameDay(d, new Date());
-                const allEvents = await getEventsForDate(d);
+                const dateKey = formatDateKey(d);
+                const allEvents = eventsMap[dateKey] || [];
 
-                // Filtrar solo las notas
                 const relevantEvents = allEvents.filter(e => e.type === 'note' || e.type === 'external');
                 if (relevantEvents.length === 0) continue;
 
                 totalEvents += relevantEvents.length;
 
-                // Bloque de Día (Encabezado verde en la foto)
                 const dayHeader = document.createElement('div');
                 dayHeader.style.fontFamily = "'Cinzel', serif";
                 dayHeader.style.color = isToday ? 'var(--cinnabar)' : '#1B5E20';
@@ -5557,9 +5568,8 @@
                 dayHeader.style.borderBottom = `1px solid ${isToday ? 'var(--cinnabar)' : '#1B5E20'}`;
                 dayHeader.style.marginTop = '10px';
                 dayHeader.textContent = formatShortDay(d);
-                container.appendChild(dayHeader);
+                fragment.appendChild(dayHeader);
 
-                // Ordenar por hora
                 relevantEvents.sort((a, b) => {
                     const tA = (a.type === 'shift' ? a.startTime : a.time) || '99:99';
                     const tB = (b.type === 'shift' ? b.startTime : b.time) || '99:99';
@@ -5574,10 +5584,7 @@
                     row.style.padding = '12px 10px';
                     row.style.gap = '15px';
                     row.style.transition = 'background 0.2s';
-                    row.onmouseenter = () => row.style.background = '#fefefe';
-                    row.onmouseleave = () => row.style.background = 'white';
 
-                    // Columna de Hora (Izquierda)
                     const timeCol = document.createElement('div');
                     timeCol.style.width = '50px';
                     timeCol.style.fontSize = '13px';
@@ -5585,7 +5592,6 @@
                     timeCol.style.fontWeight = 'bold';
                     timeCol.textContent = (e.type === 'shift' ? e.startTime : e.time) || '--:--';
 
-                    // Columna de Contenido (Derecha)
                     const contentCol = document.createElement('div');
                     contentCol.style.flex = '1';
 
@@ -5604,7 +5610,6 @@
                     subtext.style.marginBottom = '6px';
                     subtext.textContent = e.category || (e.type === 'shift' ? e.text : '');
 
-                    // Badge (Como en la foto)
                     const badge = document.createElement('span');
                     badge.style.display = 'inline-block';
                     badge.style.padding = '2px 8px';
@@ -5622,7 +5627,7 @@
                         badge.style.color = 'white';
                         badge.textContent = 'EXT';
                     } else {
-                        badge.style.background = (e.backgroundColor || '#eee') + '33'; // 20% opacidad
+                        badge.style.background = (e.backgroundColor || '#eee') + '33';
                         badge.style.color = e.backgroundColor || '#777';
                         badge.style.border = `1px solid ${e.backgroundColor || '#ddd'}`;
                         badge.textContent = 'Turno';
@@ -5631,13 +5636,13 @@
                     contentCol.appendChild(title);
                     if (subtext.textContent) contentCol.appendChild(subtext);
                     contentCol.appendChild(badge);
-
                     row.appendChild(timeCol);
                     row.appendChild(contentCol);
-                    container.appendChild(row);
+                    fragment.appendChild(row);
                 });
             }
 
+            container.innerHTML = '';
             if (totalEvents === 0) {
                 container.innerHTML = `
                     <div style="text-align:center; padding:40px; color:#999;">
@@ -5645,8 +5650,9 @@
                         <div style="font-family:'Cinzel', serif;">No hay crónicas para esta semana</div>
                     </div>
                 `;
+            } else {
+                container.appendChild(fragment);
             }
-
             // Actualizar contador superior si existe
             const totalDisplay = document.getElementById('totalEvents');
             if (totalDisplay) totalDisplay.textContent = totalEvents;
@@ -8840,7 +8846,7 @@
             let items = [];
             if (isFirebaseConfigured && db) {
                 const snapshot = await db.collection('shopping_list').get();
-                items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
             } else {
                 items = JSON.parse(localStorage.getItem('medieval_shopping_list') || '[]');
             }
@@ -8913,7 +8919,7 @@
                 : allItems.filter(item => item.inStock);
 
             const filteredItems = searchQuery
-                ? itemsForTab.filter(item => item.text.toLowerCase().includes(searchQuery))
+                ? itemsForTab.filter(item => item.text && item.text.toLowerCase().includes(searchQuery))
                 : itemsForTab;
 
             listContainer.innerHTML = '';
@@ -9241,7 +9247,7 @@
 
             for (const category in masterData) {
                 for (const text of masterData[category]) {
-                    if (!existingItems.find(item => item.text.toLowerCase() === text.toLowerCase())) {
+                    if (!existingItems.find(item => item.text && item.text.toLowerCase() === text.toLowerCase())) {
                         const newItem = {
                             text,
                             done: false,
@@ -9424,10 +9430,13 @@
             let addedCount = 0;
             let updatedCount = 0;
 
+            const batch = (isFirebaseConfigured && db) ? db.batch() : null;
+            let batchCount = 0;
+
             for (const category in masterData) {
                 for (const text of masterData[category]) {
                     const lowerText = text.toLowerCase();
-                    const existing = existingItems.find(item => item.text && item.text.toLowerCase() === lowerText);
+                    const existing = existingItems.find(item => item && item.text && item.text.toLowerCase() === lowerText);
 
                     if (!existing) {
                         const newItem = {
@@ -9437,19 +9446,31 @@
                             category,
                             timestamp: Date.now()
                         };
-                        if (isFirebaseConfigured && db) {
-                            await db.collection('shopping_list').add(newItem);
+                        if (batch) {
+                            const newDocRef = db.collection('shopping_list').doc();
+                            batch.set(newDocRef, newItem);
+                            batchCount++;
                         } else {
                             existingItems.push(newItem);
                         }
                         addedCount++;
                     } else if (existing.category !== category) {
-                        // Actualizar categoría si es distinta (p.ej. estaba en Otros)
                         existing.category = category;
-                        await updateShoppingItem(existing.id || existing.timestamp, { category });
+                        const itemId = existing.id || existing.timestamp;
+                        if (batch && itemId && typeof itemId === 'string' && itemId.length > 15) {
+                            const docRef = db.collection('shopping_list').doc(itemId);
+                            batch.update(docRef, { category });
+                            batchCount++;
+                        } else if (!batch) {
+                            // Update local array if needed (already done: existing.category = category)
+                        }
                         updatedCount++;
                     }
                 }
+            }
+
+            if (batch && batchCount > 0) {
+                await batch.commit();
             }
 
             if (!isFirebaseConfigured || !db) {
@@ -9786,7 +9807,7 @@
             // Inicializar extras
             displayMedievalQuote();
             autoLoadSuppliesAsChecked();
-            await loadExternalCalendars();
+            // await loadExternalCalendars(); // Eliminado duplicado redundante
 
             // Iniciar vigía de alarmas cada minuto
             setInterval(checkAlarms, 60000);
