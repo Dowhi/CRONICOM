@@ -9708,7 +9708,7 @@
         }
 
         async function loadExternalCalendars() {
-            externalEventsByDate = {}; // Limpiar memoria de eventos filtrados para renderizado
+            externalEventsByDate = {}; // Reset local cache for rendering
             
             if (!externalCalendars || externalCalendars.length === 0) {
                 renderCalendar();
@@ -9716,48 +9716,23 @@
                 return;
             }
 
-            // Memoria persistente para evitar bloqueos por refrescar mucho la página (429 Too Many Requests)
             const CACHE_KEY = 'external_calendars_content_cache';
             let contentCache = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-            const CACHE_DURATION = 1000 * 60 * 60; // 1 hora de memoria
+            const CACHE_DURATION = 1000 * 60 * 60 * 24; // 24 HORAS
             const now = Date.now();
             let cacheUpdated = false;
 
-            // Cargar todos en paralelo para que uno lento no bloquee al resto
-            const promises = externalCalendars.map(async (cal) => {
-                try {
-                    let data = '';
-                    if (cal.rawText) {
-                        data = cal.rawText;
-                    } else if (cal.url) {
-                        // Verificar si tenemos este contenido en memoria y si es reciente
-                        const cached = contentCache[cal.url];
-                        if (cached && (now - cached.timestamp < CACHE_DURATION)) {
-                            // Usamos el pergamino que ya teníamos guardado (Caché)
-                            data = cached.content;
-                        } else {
-                            // Si no hay memoria o expiró (1h), descargamos del pergamino lejano
-                            data = await fetchWithProxy(cal.url);
-                            // Guardamos en la memoria para la próxima vez
-                            contentCache[cal.url] = {
-                                content: data,
-                                timestamp: now
-                            };
-                            cacheUpdated = true;
-                        }
-                    } else {
-                        return;
-                    }
-
-                    if (!data || data.trim().length < 20) return;
-
+            // --- PASO 1: CARGA INSTANTÁNEA DESDE CACHÉ (VELOCIDAD MÁXIMA) ---
+            externalCalendars.forEach(cal => {
+                let data = cal.rawText || (cal.url && contentCache[cal.url] ? contentCache[cal.url].content : null);
+                if (data && data.trim().length > 20) {
                     const events = parseICS(data);
                     events.forEach(ev => {
-                        if (ev.start) { // Asegurarnos de que tiene fecha válida
+                        if (ev.start) {
                             if (!externalEventsByDate[ev.start]) externalEventsByDate[ev.start] = [];
                             externalEventsByDate[ev.start].push({
                                 text: ev.summary || '(Sin Título)',
-                                time: ev.time || '', // IMPORTAR LA HORA
+                                time: ev.time || '',
                                 description: ev.description || '',
                                 type: 'external',
                                 category: cal.name,
@@ -9767,20 +9742,64 @@
                             });
                         }
                     });
-                } catch (e) {
-                    console.warn(`Incidente con el calendario: ${cal.name}. Error:`, e.message);
                 }
             });
 
-            await Promise.all(promises);
-            
-            // Guardar la caché actualizada si hubo cambios
-            if (cacheUpdated) {
-                localStorage.setItem(CACHE_KEY, JSON.stringify(contentCache));
-            }
-
+            // Renderizar inmediatamente lo que tengamos en memoria (INSTANTANEO)
             renderCalendar();
             renderWeeklyView();
+
+            // --- PASO 2: ACTUALIZACIÓN EN SEGUNDO PLANO (SIN BLOQUEAR EL INICIO) ---
+            (async () => {
+                const calendarsToRefresh = externalCalendars.filter(cal => {
+                    if (cal.rawText) return false;
+                    if (!cal.url) return false;
+                    const cached = contentCache[cal.url];
+                    return !cached || (now - cached.timestamp > CACHE_DURATION);
+                });
+
+                if (calendarsToRefresh.length === 0) return;
+
+                const refreshPromises = calendarsToRefresh.map(async (cal) => {
+                    try {
+                        const freshData = await fetchWithProxy(cal.url);
+                        if (freshData && freshData.trim().length > 20) {
+                            contentCache[cal.url] = { content: freshData, timestamp: now };
+                            cacheUpdated = true;
+                            
+                            const newEvents = parseICS(freshData);
+                            newEvents.forEach(ev => {
+                                if (ev.start) {
+                                    if (!externalEventsByDate[ev.start]) externalEventsByDate[ev.start] = [];
+                                    if (!externalEventsByDate[ev.start].some(e => e.text === (ev.summary || '(Sin Título)') && e.category === cal.name)) {
+                                        externalEventsByDate[ev.start].push({
+                                            text: ev.summary || '(Sin Título)',
+                                            time: ev.time || '',
+                                            description: ev.description || '',
+                                            type: 'external',
+                                            category: cal.name,
+                                            backgroundColor: cal.color,
+                                            isExternal: true,
+                                            fontSize: 10
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.warn(`Silencio en el fondo: fallback a caché para ${cal.name}`);
+                    }
+                });
+
+                await Promise.all(refreshPromises);
+
+                if (cacheUpdated) {
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(contentCache));
+                    // Volver a renderizar solo si bajaron novedades
+                    renderCalendar();
+                    renderWeeklyView();
+                }
+            })();
         }
 
         async function init() {
