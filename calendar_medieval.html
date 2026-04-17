@@ -6649,6 +6649,7 @@
         // Vista Semanal / Recurrentes
         // =========================
         let editingRecurringId = null;
+        let currentEditingRecurringId = null; // Para vincular ediciones de ocurrencias virtuales
 
         function matchesRecurring(def, date) {
             const dateObj = (date instanceof Date) ? date : new Date(date);
@@ -7063,6 +7064,15 @@
                 }
 
                 cancelEditRecurring();
+                
+                // Actualizar localmente para feedback inmediato en el calendario
+                if (editingRecurringId) {
+                    const idx = recurringEventsDefinitions.findIndex(d => d.id === editingRecurringId);
+                    if (idx !== -1) {
+                        recurringEventsDefinitions[idx] = { ...recurringEventsDefinitions[idx], ...data };
+                    }
+                }
+                
                 renderCalendar();
                 renderActiveRecurringList();
             } catch (e) {
@@ -7471,6 +7481,7 @@
 
         function loadNoteIntoEditor(note) {
             currentEditingNoteId = note.id || null;
+            currentEditingRecurringId = note.recurringId || null;
             document.getElementById('medievalEditor').innerHTML = note.text || '';
             document.getElementById('editorTime').value = note.time || '';
 
@@ -7509,6 +7520,7 @@
 
         function resetEditorFields() {
             currentEditingNoteId = null;
+            currentEditingRecurringId = null;
             document.getElementById('medievalEditor').innerHTML = '';
             document.getElementById('editorTime').value = '';
             document.getElementById('editorCategory').value = '';
@@ -7827,7 +7839,8 @@
                 fontFamily: fontFamily,
                 sharedWith: sharedWith,
                 authorId: myId || null,
-                updatedAt: now
+                updatedAt: now,
+                recurringId: currentEditingRecurringId || null // Vincular con recurrencia original
             };
 
             if (noteIdx !== -1) {
@@ -8775,7 +8788,7 @@
             }
 
             const allItems = await getShoppingItemsFromDB();
-            const existing = allItems.find(item => item.text.toLowerCase() === lowerText);
+            const existing = allItems.find(item => item && item.text && item.text.toLowerCase() === lowerText);
 
             if (existing) {
                 // Si ya existe, simplemente lo movemos a la lista de compra (inStock=false) y desmarcamos
